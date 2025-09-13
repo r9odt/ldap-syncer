@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build \
 	-a -installsuffix cgo \
 	-o /syncer cmd/main.go; 	
 
-FROM scratch AS runtime
+FROM gcr.io/distroless/base-debian12 AS runtime
 
 COPY --from=build /syncer /
 
