@@ -43,7 +43,7 @@ type Syncer struct {
 func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 	var (
 		c *Syncer = &Syncer{
-			IsDryRun:                    utils.ParseBoolEnv(constant.IsDryRunEnv, true),
+			IsDryRun:                    utils.ParseBoolEnv(constant.IsDryRunEnv, false),
 			Ctx:                         ctx,
 			Ldap:                        l,
 			SyncInterval:                utils.ParseDurationEnv(constant.GitlabSyncIntervalEnv, 30*time.Minute),

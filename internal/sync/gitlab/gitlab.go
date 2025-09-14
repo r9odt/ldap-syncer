@@ -45,7 +45,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	// Find all users in user group
 	allUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(s.UsersLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
 		// In-order request attributes
 		[]string{
@@ -64,19 +64,11 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	}
 
 	for _, en := range sr.Entries {
-		username := ""
+		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		user := s.newUser()
 		user.dn = en.DN
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapUsernameAttr:
-				username = attr.Values[0]
-			case s.Ldap.LdapDisplayNameAttr:
-				user.displayName = attr.Values[0]
-			case s.Ldap.LdapSSHKeyAttr:
-				user.sshKeys = append(user.sshKeys, attr.Values...)
-			}
-		}
+		user.displayName = en.GetAttributeValue(s.Ldap.LdapDisplayNameAttr)
+		user.sshKeys = append(user.sshKeys, en.GetAttributeValues(s.Ldap.LdapSSHKeyAttr)...)
 		if len(username) > 0 {
 			s.ldapAllUsers[username] = user
 			s.Logger.Debugf("Created ldap user %s object %#v %#v", username, user, s.ldapAllUsers[username])
@@ -86,7 +78,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	// Find all users in admin group
 	adminUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(s.AdminLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
 		[]string{
 			s.Ldap.LdapUsernameAttr,
@@ -102,14 +94,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	}
 
 	for _, en := range sr.Entries {
-		username := ""
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapUsernameAttr:
-				username = attr.Values[0]
-				break
-			}
-		}
+		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) == 0 {
 			continue
 		}
@@ -123,7 +108,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	expireDate := time.Now().AddDate(0, 0, -int(s.Ldap.LdapExpiredUsersDeltaDays)).Format("20060102150405")
 	expiredUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		fmt.Sprintf(ldap.GroupExpiredMembersFilter, goldap.EscapeFilter(s.UsersLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN), goldap.EscapeFilter(expireDate)),
 		[]string{
 			s.Ldap.LdapUsernameAttr,
@@ -139,14 +124,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	}
 
 	for _, en := range sr.Entries {
-		username := ""
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapUsernameAttr:
-				username = attr.Values[0]
-				break
-			}
-		}
+		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) > 0 {
 			s.ldapExpiredUsers[username] = true
 			s.Logger.Debugf("Found expired password for ldap user %s", username)
@@ -162,7 +140,7 @@ func (s *Syncer) syncProjectLimits() {
 	// Find all groups by prefix
 	groupSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapGroupsBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		filter,
 		[]string{
 			s.Ldap.LdapGroupnameAttr,
@@ -178,14 +156,7 @@ func (s *Syncer) syncProjectLimits() {
 	}
 
 	for _, en := range gr.Entries {
-		groupname := ""
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapGroupnameAttr:
-				groupname = attr.Values[0]
-				break
-			}
-		}
+		groupname := en.GetAttributeValue(s.Ldap.LdapGroupnameAttr)
 		if len(groupname) == 0 {
 			continue
 		}
@@ -195,7 +166,7 @@ func (s *Syncer) syncProjectLimits() {
 		// Find all users in group
 		membersSearchRequest := goldap.NewSearchRequest(
 			s.Ldap.LdapUsersBaseDN,
-			1, 0, 0, 0, false,
+			goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 			fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(groupname), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
 			[]string{
 				s.Ldap.LdapUsernameAttr,
@@ -211,14 +182,7 @@ func (s *Syncer) syncProjectLimits() {
 		}
 
 		for _, en := range sr.Entries {
-			username := ""
-			for _, attr := range en.Attributes {
-				switch attr.Name {
-				case s.Ldap.LdapUsernameAttr:
-					username = attr.Values[0]
-					break
-				}
-			}
+			username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 			if len(username) == 0 {
 				continue
 			}
@@ -239,7 +203,7 @@ func (s *Syncer) syncCanCreateTLGFlag() error {
 	// Find all users in group
 	usersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(s.UserCanCreateTLGLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
 		[]string{
 			s.Ldap.LdapUsernameAttr,
@@ -255,14 +219,7 @@ func (s *Syncer) syncCanCreateTLGFlag() error {
 	}
 
 	for _, en := range sr.Entries {
-		username := ""
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapUsernameAttr:
-				username = attr.Values[0]
-				break
-			}
-		}
+		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) == 0 {
 			continue
 		}
@@ -459,11 +416,12 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 				Key:   &key,
 			}
 
-			_, _, err := s.client.Users.AddSSHKeyForUser(user.ID, keyOptions, gitlab.WithContext(s.Ctx))
+			key, _, err := s.client.Users.AddSSHKeyForUser(user.ID, keyOptions, gitlab.WithContext(s.Ctx))
 			if err != nil {
 				s.Logger.Errorf("Cannot add key %s for user %s: %s", key, user.Username, err.Error())
 				continue
 			}
+			keyid = key.ID
 		}
 		s.Logger.Infof("Add key %d for user %s: %s", keyid, user.Username, title)
 	}
@@ -804,7 +762,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 	// Find groups
 	groupSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapGroupsBaseDN,
-		1, 0, 0, 0, false,
+		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 		filter,
 		[]string{
 			s.Ldap.LdapGroupnameAttr,
@@ -819,14 +777,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 	}
 
 	for _, en := range sr.Entries {
-		groupname := ""
-		for _, attr := range en.Attributes {
-			switch attr.Name {
-			case s.Ldap.LdapGroupnameAttr:
-				groupname = attr.Values[0]
-				break
-			}
-		}
+		groupname := en.GetAttributeValue(s.Ldap.LdapGroupnameAttr)
 		if len(groupname) == 0 {
 			continue
 		}
@@ -837,7 +788,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 		// Find members
 		usersSearchRequest := goldap.NewSearchRequest(
 			s.Ldap.LdapUsersBaseDN,
-			1, 0, 0, 0, false,
+			goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
 			fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(groupname), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
 			[]string{
 				s.Ldap.LdapUsernameAttr,
@@ -853,14 +804,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 		}
 
 		for _, en := range gsr.Entries {
-			username := ""
-			for _, attr := range en.Attributes {
-				switch attr.Name {
-				case s.Ldap.LdapUsernameAttr:
-					username = attr.Values[0]
-					break
-				}
-			}
+			username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 			if len(username) > 0 {
 				members[username] = accessLevel
 			}
