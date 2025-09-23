@@ -1,11 +1,11 @@
 module github.com/r9odt/ldap-syncer
 
-go 1.24.4
+go 1.25.1
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/rs/zerolog v1.34.0
-	gitlab.com/gitlab-org/api/client-go v0.143.3
+	gitlab.com/gitlab-org/api/client-go v0.148.0
 )
 
 require (
@@ -18,6 +18,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
