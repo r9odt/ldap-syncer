@@ -105,7 +105,7 @@ func (s *Syncer) validate() error {
 	}
 
 	if validateErrors > 0 {
-		return constant.ValidateError
+		return constant.ErrValidate
 	}
 	return nil
 }

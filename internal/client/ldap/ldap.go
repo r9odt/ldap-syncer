@@ -8,7 +8,7 @@ import (
 
 // Connect is Ldap Connection without TLS
 func (c *Config) Connect() error {
-	l, err := ldap.DialURL(fmt.Sprintf("%s", c.LdapURL))
+	l, err := ldap.DialURL(c.LdapURL)
 	if err != nil {
 		c.Logger.Errorf("Cannot connect to %s: %s",
 			c.LdapURL, err.Error())

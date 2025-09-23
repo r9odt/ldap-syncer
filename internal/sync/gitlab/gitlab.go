@@ -687,10 +687,8 @@ func (s *Syncer) isUserManagedByLdapProvider(user *gitlab.User) bool {
 			break
 		}
 	}
-	if len(ldapProviderUserDN) == 0 {
-		return false
-	}
-	return true
+
+	return len(ldapProviderUserDN) != 0
 }
 
 func (s *Syncer) getGitLabUserByID(id int) *gitlab.User {

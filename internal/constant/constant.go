@@ -70,5 +70,5 @@ const (
 	DryRunLogMsg string = "Dry run sync mode: %v"
 )
 
-// ValidateError error type for general validation errors
-var ValidateError error = fmt.Errorf("%s", "Validate error")
+// ErrValidate error type for general validation errors
+var ErrValidate error = fmt.Errorf("%s", "Validate error")

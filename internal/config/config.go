@@ -35,7 +35,7 @@ func New(ctx context.Context) (*Config, error) {
 	g, gerr := gitlab.New(ctx, l)
 
 	if lerr != nil || gerr != nil {
-		return c, ValidateError
+		return c, constant.ErrValidate
 	}
 
 	c.Ldap = l
