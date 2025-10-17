@@ -12,6 +12,11 @@ const (
 	// LogFileEnv environment variable name
 	LogFileEnv string = "LOG_FILE"
 
+	// IsGilabSyncEnabledEnv environment variable name
+	IsGilabSyncEnabledEnv string = "SYNC_GITLAB_ENABLED"
+	// IsJsWikiSyncEnabledEnv environment variable name
+	IsJsWikiSyncEnabledEnv string = "SYNC_JSWIKI_ENABLED"
+
 	// LdapURLEnv environment variable name
 	LdapURLEnv string = "LDAP_URL"
 	// LdapBindDNEnv environment variable name
@@ -57,6 +62,21 @@ const (
 	GitlabUserDefaultCanCreateTLGEnv string = "GITLAB_USER_DEFAULT_CAN_CREATE_TLG"
 	// GitlabUserCanCreateTLGLdapGroupEnv environment variable name
 	GitlabUserCanCreateTLGLdapGroupEnv string = "LDAP_GITLAB_USER_CAN_CREATE_TLG_GROUP"
+
+	// JsWikiApiURLEnv environment variable name
+	JsWikiApiURLEnv string = "JSWIKI_API_URL"
+	// JsWikiTokenEnv environment variable name
+	JsWikiTokenEnv string = "JSWIKI_TOKEN"
+	// JsWikiUsersTZEnv environment variable name
+	JsWikiUsersTZEnv string = "JSWIKI_USERS_TZ"
+	// JsWikiSyncIntervalEnv environment variable name
+	JsWikiSyncIntervalEnv string = "JSWIKI_SYNC_INTERVAL"
+	// JsWikiUsersLdapGroupEnv environment variable name
+	JsWikiUsersLdapGroupEnv string = "LDAP_JSWIKI_USERS_GROUP"
+	// JsWikiAdminLdapGroupEnv environment variable name
+	JsWikiAdminLdapGroupEnv string = "LDAP_JSWIKI_ADMIN_GROUP"
+	// LdapGroupPrefixEnv environment variable name
+	JsWikiLdapGroupPrefixEnv string = "LDAP_JSWIKI_GROUP_PREFIX"
 )
 
 const (
@@ -68,6 +88,30 @@ const (
 
 	// DryRunLogMsg for log dry run mode
 	DryRunLogMsg string = "Dry run sync mode: %v"
+
+	// CannotReadResponseBodyMsg is log msg
+	CannotReadResponseBodyMsg string = "Cannot read response body: %s"
+
+	// CannotCreateQueryMsg is log msg
+	CannotCreateQueryMsg string = "Cannot create graphql query: %s"
+
+	// CannotUnmarshallMsg is log msg
+	CannotUnmarshallMsg string = "Cannot unmarshall data: %s"
+
+	// ExpiredPasswordReasonMsg is log msg for expired password ban reason
+	ExpiredPasswordReasonMsg string = "Has expired password"
+	// DeletedInLdapReasonMsg is log msg for deleted from ldap reason
+	DeletedInLdapReasonMsg string = "Deleted in ldap"
+	// DisabledOrExcludeFromGroupReasonMsg is log msg for disabled or exclude from access group ban reason
+	DisabledOrExcludeFromGroupReasonMsg string = "Disabled in ldap or excluded from access group"
+	// BanUserMsg is log msg for ban action
+	BanUserMsg string = "User %s has banned. Reason: %s"
+	// UnbanUserMsg is log msg for unban action
+	UnbanUserMsg string = "User %s unbanned"
+	// DeleteUserMsg is log msg for delete action
+	DeleteUserMsg string = "User %s has deleted. Reason: %s"
+	// UpdateUserMsg is log msg for delete action
+	UpdateUserMsg string = "User %s updated"
 )
 
 // ErrValidate error type for general validation errors

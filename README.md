@@ -3,6 +3,11 @@
 - Work tested only with FreeIPA.
 Functionality with OpenLDAP and other providers is not guaranteed and may require code modifications.
 
+Supported:
+
+- Gitlab
+- JsWiki
+
 ## Config
 
 Configuration via environment variables.
@@ -27,6 +32,7 @@ Configuration via environment variables.
 
 ### Gitlab syncer parameters
 
+- SYNC_GITLAB_ENABLED: Is sync for gitlab enabled
 - GITLAB_SYNC_INTERVAL: Time interval for sync. Default: `30m`
 - GITLAB_API_URL: URL for accessing Gitlab (e.g. <https://gitlab.example.com>). Required value.
 - GITLAB_TOKEN: Token for working with the Gitlab API. (e.g. `glpat-xxxxx`). Required value.
@@ -44,9 +50,20 @@ Configuration via environment variables.
 - LDAP_GITLAB_USER_CAN_CREATE_TLG_GROUP: Group to allow users create top-level groups.
   When value empty, sync do not perfomed. Default value `''`.
 
+### JsWiki syncer parameters
+
+- SYNC_JSWIKI_ENABLED: Is sync for jswiki enabled
+- JSWIKI_API_URL: URL for accessing JsWiki GraphQL (e.g. <https://jswiki.example.com/graphql>). Required value.
+- JSWIKI_TOKEN: Token for working with the JsWiki API. (e.g. `glpat-xxxxx`). Required value.
+- JSWIKI_USERS_TZ: Default value for `timezone` user property. Default: `Asia/Krasnoyarsk`
+- JSWIKI_SYNC_INTERVAL: Time interval for sync. Default: `30m`
+- LDAP_JSWIKI_USERS_GROUP: Group allowed to access JsWiki. Accounts are synchronized based on this group. Accounts not in this group are set to the banned state. Default value: `jswiki-users`.
+- LDAP_JSWIKI_ADMIN_GROUP: Group whose members have administrator rights in JsWiki. Default value: `jswiki-admins`.
+- LDAP_JSWIKI_GROUP_PREFIX: Prefix for LDAP groups used to synchronize JsWiki group members. Groups must already exist in JsWiki. Default value: `jswiki-role-`.
+
 ## Gitlab
 
-### Data Synchronization
+### Gitlab Data Synchronization
 
 - Users
   - Are not created automatically.
@@ -76,3 +93,18 @@ Configuration via environment variables.
   ```
 
   ***gitlab-prlimit-100000*** - Set project limit for members to 100000.
+
+## JsWiki
+
+### JsWiki Data Synchronization
+
+- Users
+  - Are not created automatically.
+  - The timezone is ruled by syncer.
+  - `Administrators` group is synchronized (Based on group membership in ldap admin group).
+  - Accounts are blocked (*banned*) if they are removed from the `LDAP_JSWIKI_USERS_GROUP` or if their password has been expired for more than 2 days. They are unblocked if the membership condition is fulfilled and the password is not expired.
+  - Accounts are deleted if they are no longer present in LDAP.
+- Groups
+  - Are not created automatically.
+  - Membership in JsWiki groups is synchronized based on LDAP groups.
+  

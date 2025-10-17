@@ -15,6 +15,10 @@ import (
 
 // Start sync process
 func (s *Syncer) Sync() {
+	if !s.Enabled {
+		s.Logger.Info("Sync disabled")
+		return
+	}
 	var err error
 	s.client, err = gitlab.NewClient(
 		s.Token,
@@ -281,15 +285,15 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 
 		if _, ok := s.ldapAllUsers[u.Username]; !ok {
 			if s.Ldap.IsLdapUserExist(u.Username) {
-				s.banUser(u, DisabledOrExcludeFromGroupReasonMsg)
+				s.banUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
 			} else {
-				s.deleteUser(u, DeletedInLdapReasonMsg)
+				s.deleteUser(u, constant.DeletedInLdapReasonMsg)
 			}
 			continue
 		}
 
 		if _, ok := s.ldapExpiredUsers[u.Username]; ok {
-			s.banUser(u, ExpiredPasswordReasonMsg)
+			s.banUser(u, constant.ExpiredPasswordReasonMsg)
 			continue
 		}
 
@@ -344,7 +348,7 @@ func (s *Syncer) banUser(user *gitlab.User, reason string) {
 	if !s.IsDryRun {
 		s.client.Users.BanUser(user.ID, gitlab.WithContext(s.Ctx))
 	}
-	s.Logger.Infof(BanUserMsg, user.Username, reason)
+	s.Logger.Infof(constant.BanUserMsg, user.Username, reason)
 }
 
 func (s *Syncer) unbanUser(user *gitlab.User) {
@@ -354,14 +358,14 @@ func (s *Syncer) unbanUser(user *gitlab.User) {
 	if !s.IsDryRun {
 		s.client.Users.UnbanUser(user.ID, gitlab.WithContext(s.Ctx))
 	}
-	s.Logger.Infof(UnbanUserMsg, user.Username)
+	s.Logger.Infof(constant.UnbanUserMsg, user.Username)
 }
 
 func (s *Syncer) deleteUser(user *gitlab.User, reason string) {
 	if !s.IsDryRun {
 		s.client.Users.DeleteUser(user.ID, gitlab.WithContext(s.Ctx))
 	}
-	s.Logger.Infof(DeleteUserMsg, user.Username, reason)
+	s.Logger.Infof(constant.DeleteUserMsg, user.Username, reason)
 }
 
 // syncSSHKeys is sync procedure ssh keys (Only one direction FreeIPA -> Gitlab)
@@ -418,7 +422,7 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 
 			key, _, err := s.client.Users.AddSSHKeyForUser(user.ID, keyOptions, gitlab.WithContext(s.Ctx))
 			if err != nil {
-				s.Logger.Errorf("Cannot add key %s for user %s: %s", key, user.Username, err.Error())
+				s.Logger.Errorf("Cannot add key for user %s: %s", user.Username, err.Error())
 				continue
 			}
 			keyid = key.ID

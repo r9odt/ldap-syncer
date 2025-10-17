@@ -14,6 +14,7 @@ import (
 // Syncer represents a Gitlab syncer
 type Syncer struct {
 	IsDryRun bool
+	Enabled  bool
 
 	ApiURL                      string
 	Token                       string
@@ -44,6 +45,7 @@ func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 	var (
 		c *Syncer = &Syncer{
 			IsDryRun:                    utils.ParseBoolEnv(constant.IsDryRunEnv, false),
+			Enabled:                     utils.ParseBoolEnv(constant.IsGilabSyncEnabledEnv, true),
 			Ctx:                         ctx,
 			Ldap:                        l,
 			SyncInterval:                utils.ParseDurationEnv(constant.GitlabSyncIntervalEnv, 30*time.Minute),
@@ -75,6 +77,9 @@ func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 
 func (s *Syncer) validate() error {
 	var validateErrors uint8 = 0
+	if !s.Enabled {
+		return nil
+	}
 	if s.ApiURL == "" {
 		s.Logger.Errorf(constant.RequiredFieldErrorMsg, constant.GitlabApiURLEnv)
 		validateErrors++

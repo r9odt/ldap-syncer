@@ -38,6 +38,8 @@ func main() {
 
 	// run gitlab sync
 	wg.Go(config.Gitlab.Sync)
+	// run jswiki sync
+	wg.Go(config.JsWiki.Sync)
 
 	config.Logger.Info(fmt.Sprint(<-ch))
 
