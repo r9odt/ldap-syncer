@@ -76,7 +76,7 @@ func (s *Syncer) syncUsers() {
 		s.enableUser(u)
 
 		needUpdate := false
-		if strings.Compare(u.Timezone, s.UsersTZ) != 0 {
+		if u.Timezone != s.UsersTZ {
 			needUpdate = true
 			s.Logger.Infof(UpdateTZFieldMsg, u.ProviderId,
 				u.Timezone, s.UsersTZ)
@@ -166,6 +166,13 @@ func (s *Syncer) deleteUser(user *JsWikiUser, reason string) error {
 
 func (s *Syncer) syncGroups() {
 	s.Logger.Infof("Groups sync start")
+	rootMemberId := -1
+	for _, m := range s.jswikiUsers {
+		if s.jswikiUsers[m.Id].Name == "Administrator" {
+			rootMemberId = m.Id
+			break
+		}
+	}
 	for _, g := range s.jswikiGroups {
 		s.Logger.Infof("Sync group %s", g.Name)
 
@@ -174,9 +181,13 @@ func (s *Syncer) syncGroups() {
 			continue
 		}
 
+		hasRootMember := false
 		for _, m := range g.Users {
 			if _, ok := ldapMembers[m.Id]; ok {
 				continue
+			}
+			if m.Id == 1 { // Administrator has id = 1
+				hasRootMember = true
 			}
 			if m.IsSystem {
 				s.Logger.Infof("User %s is system", m.Name)
@@ -188,6 +199,10 @@ func (s *Syncer) syncGroups() {
 			}
 
 			s.unassignGroup(g.Id, m.Id)
+		}
+
+		if g.Name == "Administrators" && !hasRootMember && rootMemberId >= 0 {
+			s.assignGroup(g.Id, rootMemberId)
 		}
 
 		for mid := range ldapMembers {
@@ -230,7 +245,11 @@ func (s *Syncer) assignGroup(gid, uid int) error {
 			return err
 		}
 	}
-	s.Logger.Infof(AssignGroupMsg, s.jswikiUsers[uid].ProviderId, s.jswikiGroups[gid].Name)
+	uname := s.jswikiUsers[uid].Name
+	if len(s.jswikiUsers[uid].ProviderId) > 0 {
+		uname = s.jswikiUsers[uid].ProviderId
+	}
+	s.Logger.Infof(AssignGroupMsg, uname, s.jswikiGroups[gid].Name)
 	return nil
 }
 
@@ -387,35 +406,6 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 		}
 	}
 
-	// Find all users in admin group
-	adminUsersSearchRequest := goldap.NewSearchRequest(
-		s.Ldap.LdapUsersBaseDN,
-		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf(ldap.GroupActiveMembersFilter, goldap.EscapeFilter(s.AdminLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN)),
-		[]string{
-			s.Ldap.LdapUsernameAttr,
-		},
-		nil,
-	)
-
-	sr, err = s.Ldap.Connection.Search(adminUsersSearchRequest)
-	if err != nil {
-		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-			s.AdminLdapGroup, err.Error())
-		return err
-	}
-
-	for _, en := range sr.Entries {
-		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
-		user := s.newUser()
-		user.dn = en.DN
-		user.displayName = en.GetAttributeValue(s.Ldap.LdapDisplayNameAttr)
-		if len(username) > 0 {
-			s.ldapAllUsers[username] = user
-			s.Logger.Debugf("Created ldap admin user %s object %#v %#v", username, user, s.ldapAllUsers[username])
-		}
-	}
-
 	// Find all expired users in users group
 	expireDate := time.Now().AddDate(0, 0, -int(s.Ldap.LdapExpiredUsersDeltaDays)).Format("20060102150405")
 	expiredUsersSearchRequest := goldap.NewSearchRequest(
@@ -449,7 +439,7 @@ func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
 	isExist := false
 	members := make(map[int]bool)
 	groupname := gr
-	if strings.Compare("Administrators", gr) == 0 {
+	if gr == "Administrators" {
 		groupname = s.AdminLdapGroup
 	} else {
 		if !strings.HasPrefix(groupname, s.LdapGroupPrefix) {

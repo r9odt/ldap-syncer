@@ -35,7 +35,6 @@ type Syncer struct {
 	jswikiGroups map[int]*JsWikiGroup
 
 	ldapAllUsers     map[string]*User
-	ldapAdminUsers   map[string]*User
 	ldapExpiredUsers map[string]bool
 }
 
@@ -71,7 +70,6 @@ func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 	c.jswikiGroups = make(map[int]*JsWikiGroup)
 
 	c.ldapAllUsers = make(map[string]*User)
-	c.ldapAdminUsers = make(map[string]*User)
 	c.ldapExpiredUsers = make(map[string]bool)
 
 	return c, c.validate()
