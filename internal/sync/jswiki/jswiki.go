@@ -85,7 +85,6 @@ func (s *Syncer) syncUsers() {
 		if needUpdate {
 			s.updateUser(u)
 		}
-		s.Logger.Infof("%#v", needUpdate)
 	}
 	s.Logger.Infof("Users sync done")
 }
