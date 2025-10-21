@@ -41,7 +41,7 @@ type Syncer struct {
 // New return the Syncer object for Gitlab
 func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 	var (
-		c *Syncer = &Syncer{
+		c = &Syncer{
 			IsDryRun:        utils.ParseBoolEnv(constant.IsDryRunEnv, false),
 			Enabled:         utils.ParseBoolEnv(constant.IsJsWikiSyncEnabledEnv, true),
 			Ctx:             ctx,

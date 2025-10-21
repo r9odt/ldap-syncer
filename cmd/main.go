@@ -47,5 +47,7 @@ func main() {
 	cancel()
 	// wait all goroutines
 	wg.Wait()
-	config.Ldap.Connection.Close()
+	if err = config.Ldap.Connection.Close(); err != nil {
+		config.Logger.Errorf("LDAP close connection error: %s", err.Error())
+	}
 }

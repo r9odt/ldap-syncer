@@ -196,7 +196,7 @@ func (l ZLogger) Fatalf(format string, args ...interface{}) {
 
 // Warning prints message for warning level
 func (l ZLogger) Warning(args ...interface{}) {
-	event := l.Logger.Warn()
+	event := l.Warn()
 	if event == nil {
 		return
 	}
@@ -205,7 +205,7 @@ func (l ZLogger) Warning(args ...interface{}) {
 
 // Warningf prints message for warning level
 func (l ZLogger) Warningf(format string, args ...interface{}) {
-	event := l.Logger.Warn()
+	event := l.Warn()
 	if event == nil {
 		return
 	}

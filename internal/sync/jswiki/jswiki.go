@@ -66,14 +66,14 @@ func (s *Syncer) syncUsers() {
 
 		if _, ok := s.ldapAllUsers[u.ProviderId]; !ok {
 			if s.Ldap.IsLdapUserExist(u.ProviderId) {
-				s.disableUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
+				_ = s.disableUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
 			} else {
-				s.deleteUser(u, constant.DeletedInLdapReasonMsg)
+				_ = s.deleteUser(u, constant.DeletedInLdapReasonMsg)
 			}
 			continue
 		}
 
-		s.enableUser(u)
+		_ = s.enableUser(u)
 
 		needUpdate := false
 		if u.Timezone != s.UsersTZ {
@@ -83,7 +83,7 @@ func (s *Syncer) syncUsers() {
 			u.Timezone = s.UsersTZ
 		}
 		if needUpdate {
-			s.updateUser(u)
+			_ = s.updateUser(u)
 		}
 	}
 	s.Logger.Infof("Users sync done")
@@ -197,18 +197,18 @@ func (s *Syncer) syncGroups() {
 				continue
 			}
 
-			s.unassignGroup(g.Id, m.Id)
+			_ = s.unassignGroup(g.Id, m.Id)
 		}
 
 		if g.Name == "Administrators" && !hasRootMember && rootMemberId >= 0 {
-			s.assignGroup(g.Id, rootMemberId)
+			_ = s.assignGroup(g.Id, rootMemberId)
 		}
 
 		for mid := range ldapMembers {
 			if _, ok := g.usersMap[mid]; ok {
 				continue
 			}
-			s.assignGroup(g.Id, mid)
+			_ = s.assignGroup(g.Id, mid)
 		}
 	}
 	s.Logger.Infof("Groups sync done")
@@ -357,7 +357,8 @@ func (s *Syncer) sendGraphqlReq(r []byte) (*JsWikiGraphqlResponse, error) {
 		s.Logger.Errorf("Cannot do request to search jswiki users: %s", err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		s.Logger.Errorf(constant.CannotReadResponseBodyMsg, err.Error())

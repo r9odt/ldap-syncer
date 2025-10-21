@@ -28,10 +28,6 @@ type JsWikiGroup struct {
 	usersMap map[int]bool
 }
 
-func newJsWikiGroupFromMinimal(g JsWikiGroupMinimal) *JsWikiGroup {
-	return &JsWikiGroup{JsWikiGroupMinimal: g}
-}
-
 type JsWikiUserMinimal struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`

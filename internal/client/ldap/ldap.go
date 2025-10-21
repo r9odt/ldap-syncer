@@ -27,7 +27,9 @@ func (c *Config) Connect() error {
 
 // Close ldap connection.
 func (c *Config) Close() {
-	c.Connection.Close()
+	if err := c.Connection.Close(); err != nil {
+		c.Logger.Errorf("Closing connection error: %s", err.Error())
+	}
 }
 
 // Check user in ldap

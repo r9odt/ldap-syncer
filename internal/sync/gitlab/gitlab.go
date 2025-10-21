@@ -139,7 +139,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 func (s *Syncer) syncProjectLimits() {
 	var (
 		err    error
-		filter string = fmt.Sprintf("(cn=%s*)", goldap.EscapeFilter(s.ProjectLimitLdapGroupPrefix))
+		filter = fmt.Sprintf("(cn=%s*)", goldap.EscapeFilter(s.ProjectLimitLdapGroupPrefix))
 	)
 	// Find all groups by prefix
 	groupSearchRequest := goldap.NewSearchRequest(
@@ -200,9 +200,9 @@ func (s *Syncer) syncProjectLimits() {
 	}
 }
 
-func (s *Syncer) syncCanCreateTLGFlag() error {
+func (s *Syncer) syncCanCreateTLGFlag() {
 	if len(s.UserCanCreateTLGLdapGroup) == 0 {
-		return nil
+		return
 	}
 	// Find all users in group
 	usersSearchRequest := goldap.NewSearchRequest(
@@ -219,7 +219,7 @@ func (s *Syncer) syncCanCreateTLGFlag() error {
 	if err != nil {
 		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
 			s.UsersLdapGroup, err.Error())
-		return err
+		return
 	}
 
 	for _, en := range sr.Entries {
@@ -233,8 +233,6 @@ func (s *Syncer) syncCanCreateTLGFlag() error {
 
 		}
 	}
-
-	return nil
 }
 
 func (s *Syncer) syncUsers() {
@@ -332,7 +330,9 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 
 		if needUpdate {
 			if !s.IsDryRun {
-				s.client.Users.ModifyUser(u.ID, modifyOptions, gitlab.WithContext(s.Ctx))
+				if _, _, err := s.client.Users.ModifyUser(u.ID, modifyOptions, gitlab.WithContext(s.Ctx)); err != nil {
+					s.Logger.Errorf("Modify user error: %s", err.Error())
+				}
 			}
 			s.Logger.Infof(SaveUserMsg, u.Username)
 		}
@@ -346,7 +346,9 @@ func (s *Syncer) banUser(user *gitlab.User, reason string) {
 		return
 	}
 	if !s.IsDryRun {
-		s.client.Users.BanUser(user.ID, gitlab.WithContext(s.Ctx))
+		if err := s.client.Users.BanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
+			s.Logger.Errorf("Ban user error: %s", err.Error())
+		}
 	}
 	s.Logger.Infof(constant.BanUserMsg, user.Username, reason)
 }
@@ -356,14 +358,18 @@ func (s *Syncer) unbanUser(user *gitlab.User) {
 		return
 	}
 	if !s.IsDryRun {
-		s.client.Users.UnbanUser(user.ID, gitlab.WithContext(s.Ctx))
+		if err := s.client.Users.UnbanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
+			s.Logger.Errorf("Unban user error: %s", err.Error())
+		}
 	}
 	s.Logger.Infof(constant.UnbanUserMsg, user.Username)
 }
 
 func (s *Syncer) deleteUser(user *gitlab.User, reason string) {
 	if !s.IsDryRun {
-		s.client.Users.DeleteUser(user.ID, gitlab.WithContext(s.Ctx))
+		if _, err := s.client.Users.DeleteUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
+			s.Logger.Errorf("Delete user error: %s", err.Error())
+		}
 	}
 	s.Logger.Infof(constant.DeleteUserMsg, user.Username, reason)
 }
@@ -377,7 +383,7 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 		Page:    1,
 	}
 
-	var gitlabSSHKeys []*gitlab.SSHKey = make([]*gitlab.SSHKey, 0)
+	var gitlabSSHKeys = make([]*gitlab.SSHKey, 0)
 
 	for {
 		keys, resp, err := s.client.Users.ListSSHKeysForUser(user.ID, opt, gitlab.WithContext(s.Ctx))
@@ -650,7 +656,7 @@ func (s *Syncer) removeGroupMember(g *gitlab.Group, u *gitlab.User) {
 }
 
 func (s *Syncer) createGroupMember(g *gitlab.Group, u *gitlab.User, level gitlab.AccessLevelValue) {
-	var accessLevel gitlab.AccessLevelValue = gitlab.AccessLevelValue(utils.AbsInt(int(level)))
+	var accessLevel = gitlab.AccessLevelValue(utils.AbsInt(int(level)))
 	if !s.IsDryRun {
 		opt := &gitlab.AddGroupMemberOptions{
 			UserID:      &u.ID,
@@ -666,7 +672,7 @@ func (s *Syncer) createGroupMember(g *gitlab.Group, u *gitlab.User, level gitlab
 }
 
 func (s *Syncer) fixGroupMemberAccess(g *gitlab.Group, u *gitlab.GroupMember, level gitlab.AccessLevelValue) {
-	var accessLevel gitlab.AccessLevelValue = gitlab.AccessLevelValue(utils.AbsInt(int(level)))
+	var accessLevel = gitlab.AccessLevelValue(utils.AbsInt(int(level)))
 	if accessLevel == u.AccessLevel {
 		return
 	}

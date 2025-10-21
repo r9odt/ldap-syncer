@@ -22,7 +22,7 @@ type Config struct {
 
 func New(ctx context.Context) (*Config, error) {
 	var (
-		c *Config = &Config{
+		c = &Config{
 			Ctx: ctx,
 		}
 	)
