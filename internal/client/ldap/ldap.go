@@ -33,7 +33,7 @@ func (c *Config) Close() {
 }
 
 // Check user in ldap
-func (s *Config) IsLdapUserExist(username string) bool {
+func (s *Config) IsLdapUserExist(username string) (error, bool) {
 	var err error
 	userSearchRequest := ldap.NewSearchRequest(
 		s.LdapUsersBaseDN,
@@ -50,16 +50,16 @@ func (s *Config) IsLdapUserExist(username string) bool {
 	if err != nil {
 		s.Logger.Errorf("Cannot search user %s: %s",
 			username, err.Error())
-		return false
+		return err, false
 	}
 
 	for _, en := range sr.Entries {
 		for _, attr := range en.Attributes {
 			switch attr.Name {
 			case s.LdapUsernameAttr:
-				return true
+				return nil, true
 			}
 		}
 	}
-	return false
+	return nil, false
 }

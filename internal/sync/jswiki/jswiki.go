@@ -65,7 +65,8 @@ func (s *Syncer) syncUsers() {
 		}
 
 		if _, ok := s.ldapAllUsers[u.ProviderId]; !ok {
-			if s.Ldap.IsLdapUserExist(u.ProviderId) {
+			err, ok := s.Ldap.IsLdapUserExist(u.ProviderId)
+			if err == nil && ok {
 				_ = s.disableUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
 			} else {
 				_ = s.deleteUser(u, constant.DeletedInLdapReasonMsg)
