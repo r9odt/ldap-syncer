@@ -3,9 +3,9 @@ package config
 import (
 	"context"
 
+	"github.com/r9odt/go-logging"
 	"github.com/r9odt/ldap-syncer/internal/client/ldap"
 	"github.com/r9odt/ldap-syncer/internal/constant"
-	"github.com/r9odt/ldap-syncer/internal/logging"
 	"github.com/r9odt/ldap-syncer/internal/sync/gitlab"
 	"github.com/r9odt/ldap-syncer/internal/sync/jswiki"
 	"github.com/r9odt/ldap-syncer/internal/utils"
@@ -33,9 +33,9 @@ func New(ctx context.Context) (*Config, error) {
 	}
 	c.Logger = logger
 
-	l, lerr := ldap.New(ctx)
-	g, gerr := gitlab.New(ctx, l)
-	j, jerr := jswiki.New(ctx, l)
+	l, lerr := ldap.New(ctx, logger)
+	g, gerr := gitlab.New(ctx, l, logger)
+	j, jerr := jswiki.New(ctx, l, logger)
 
 	if lerr != nil || gerr != nil || jerr != nil {
 		return c, constant.ErrValidate

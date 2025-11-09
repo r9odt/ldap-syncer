@@ -25,10 +25,10 @@ const (
 	JsWikiUpdateUserQuery string = `mutation { users { update (id: %d timezone: "%s") {responseResult {succeeded errorCode slug message}}}}`
 
 	// UpdateTZFieldMsg is log msg for update timezone user field
-	UpdateTZFieldMsg string = "User %s, update timezone %s->%s"
+	UpdateTZFieldMsg string = "Update timezone %s->%s"
 
 	// UnassignGroupMsg is log msg for delete action
-	UnassignGroupMsg string = "User %s unassigned from group %s"
+	UnassignGroupMsg string = "Unassigned from group"
 	// AssignGroupMsg is log msg for delete action
-	AssignGroupMsg string = "User %s assigned to group %s"
+	AssignGroupMsg string = "Assigned to group"
 )

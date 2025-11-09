@@ -52,15 +52,21 @@ func (s *Syncer) sync() {
 }
 
 func (s *Syncer) syncUsers() {
-	s.Logger.Infof("Users sync start")
+	s.Logger.Info("Users sync start")
 	for _, u := range s.jswikiUsers {
-		s.Logger.Debugf("Sync user %s", u.Name)
+		s.Logger.
+			String(constant.UserLogField, u.Name).
+			Debug("Sync user")
 		if u.IsSystem {
-			s.Logger.Infof("User %s is system", u.Name)
+			s.Logger.
+				String(constant.UserLogField, u.Name).
+				Info("User is system")
 			continue
 		}
 		if len(u.ProviderId) == 0 {
-			s.Logger.Infof("User %s is not managed by ldap", u.Name)
+			s.Logger.
+				String(constant.UserLogField, u.Name).
+				Info("User is not managed by ldap")
 			continue
 		}
 
@@ -79,15 +85,17 @@ func (s *Syncer) syncUsers() {
 		needUpdate := false
 		if u.Timezone != s.UsersTZ {
 			needUpdate = true
-			s.Logger.Infof(UpdateTZFieldMsg, u.ProviderId,
-				u.Timezone, s.UsersTZ)
+			s.Logger.
+				String(constant.UserLogField, u.ProviderId).
+				Infof(UpdateTZFieldMsg,
+					u.Timezone, s.UsersTZ)
 			u.Timezone = s.UsersTZ
 		}
 		if needUpdate {
 			_ = s.updateUser(u)
 		}
 	}
-	s.Logger.Infof("Users sync done")
+	s.Logger.Info("Users sync done")
 }
 
 func (s *Syncer) updateUser(user *JsWikiUser) error {
@@ -103,7 +111,9 @@ func (s *Syncer) updateUser(user *JsWikiUser) error {
 			return err
 		}
 	}
-	s.Logger.Infof(constant.UpdateUserMsg, user.ProviderId)
+	s.Logger.
+		String(constant.UserLogField, user.ProviderId).
+		Info(constant.UpdateUserMsg)
 	return nil
 }
 
@@ -123,7 +133,10 @@ func (s *Syncer) disableUser(user *JsWikiUser, reason string) error {
 			return err
 		}
 	}
-	s.Logger.Infof(constant.DeleteUserMsg, user.ProviderId, reason)
+	s.Logger.
+		String(constant.UserLogField, user.ProviderId).
+		String(constant.ReasonLogField, reason).
+		Info(constant.BanUserMsg)
 	return nil
 }
 
@@ -143,7 +156,9 @@ func (s *Syncer) enableUser(user *JsWikiUser) error {
 			return err
 		}
 	}
-	s.Logger.Infof(constant.DeleteUserMsg, user.ProviderId)
+	s.Logger.
+		String(constant.UserLogField, user.ProviderId).
+		Info(constant.UnbanUserMsg)
 	return nil
 }
 
@@ -160,7 +175,10 @@ func (s *Syncer) deleteUser(user *JsWikiUser, reason string) error {
 			return err
 		}
 	}
-	s.Logger.Infof(constant.DeleteUserMsg, user.ProviderId, reason)
+	s.Logger.
+		String(constant.UserLogField, user.ProviderId).
+		String(constant.ReasonLogField, reason).
+		Info(constant.DeleteUserMsg)
 	return nil
 }
 
@@ -174,7 +192,9 @@ func (s *Syncer) syncGroups() {
 		}
 	}
 	for _, g := range s.jswikiGroups {
-		s.Logger.Infof("Sync group %s", g.Name)
+		s.Logger.
+			String(constant.GroupLogField, g.Name).
+			Info("Sync group")
 
 		ldapMembers, isExist := s.getJsWikiGroupLdapMembers(g.Name)
 		if !isExist {
@@ -190,11 +210,15 @@ func (s *Syncer) syncGroups() {
 				hasRootMember = true
 			}
 			if m.IsSystem {
-				s.Logger.Infof("User %s is system", m.Name)
+				s.Logger.
+					String(constant.UserLogField, m.Name).
+					Info("User is system", m.Name)
 				continue
 			}
 			if len(s.jswikiUsers[m.Id].ProviderId) == 0 {
-				s.Logger.Infof("User %s is not managed by ldap", s.jswikiUsers[m.Id].Name)
+				s.Logger.
+					String(constant.UserLogField, s.jswikiUsers[m.Id].Name).
+					Info("User is not managed by ldap")
 				continue
 			}
 
@@ -212,7 +236,7 @@ func (s *Syncer) syncGroups() {
 			_ = s.assignGroup(g.Id, mid)
 		}
 	}
-	s.Logger.Infof("Groups sync done")
+	s.Logger.Info("Groups sync done")
 }
 
 func (s *Syncer) unassignGroup(gid, uid int) error {
@@ -228,7 +252,10 @@ func (s *Syncer) unassignGroup(gid, uid int) error {
 			return err
 		}
 	}
-	s.Logger.Infof(UnassignGroupMsg, s.jswikiUsers[uid].ProviderId, s.jswikiGroups[gid].Name)
+	s.Logger.
+		String(constant.UserLogField, s.jswikiUsers[uid].Name).
+		String(constant.GroupLogField, s.jswikiGroups[gid].Name).
+		Info(UnassignGroupMsg)
 	return nil
 }
 
@@ -249,7 +276,10 @@ func (s *Syncer) assignGroup(gid, uid int) error {
 	if len(s.jswikiUsers[uid].ProviderId) > 0 {
 		uname = s.jswikiUsers[uid].ProviderId
 	}
-	s.Logger.Infof(AssignGroupMsg, uname, s.jswikiGroups[gid].Name)
+	s.Logger.
+		String(constant.UserLogField, uname).
+		String(constant.GroupLogField, s.jswikiGroups[gid].Name).
+		Info(AssignGroupMsg)
 	return nil
 }
 
@@ -391,8 +421,10 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 
 	sr, err := s.Ldap.Connection.Search(allUsersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-			s.UsersLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.UsersLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
+				err.Error())
 		return err
 	}
 
@@ -403,7 +435,6 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 		user.displayName = en.GetAttributeValue(s.Ldap.LdapDisplayNameAttr)
 		if len(username) > 0 {
 			s.ldapAllUsers[username] = user
-			s.Logger.Debugf("Created ldap user %s object %#v %#v", username, user, s.ldapAllUsers[username])
 		}
 	}
 
@@ -421,8 +452,9 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 
 	sr, err = s.Ldap.Connection.Search(expiredUsersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf("Cannot search users for ldap group %s: %s",
-			s.UsersLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.UsersLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 		return err
 	}
 
@@ -430,7 +462,9 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) > 0 {
 			s.ldapExpiredUsers[username] = true
-			s.Logger.Debugf("Found expired password for ldap user %s", username)
+			s.Logger.
+				String(constant.UserLogField, username).
+				Debug("Found expired password for ldap user")
 		}
 	}
 	return nil
@@ -494,7 +528,10 @@ func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
 		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) > 0 {
 			if s.ldapAllUsers[username].id < 0 {
-				s.Logger.Warningf("User %s can.t be added to group %s because it not exist in jswiki. User need to login before sync.", username, groupname)
+				s.Logger.
+					String(constant.UserLogField, username).
+					String(constant.GroupLogField, groupname).
+					Warning("User can.t be added to groupbecause it not exist in jswiki. User need to login before sync.")
 				continue
 			}
 			members[s.ldapAllUsers[username].id] = true

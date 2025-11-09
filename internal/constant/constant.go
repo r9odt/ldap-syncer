@@ -105,13 +105,24 @@ const (
 	// DisabledOrExcludeFromGroupReasonMsg is log msg for disabled or exclude from access group ban reason
 	DisabledOrExcludeFromGroupReasonMsg string = "Disabled in ldap or excluded from access group"
 	// BanUserMsg is log msg for ban action
-	BanUserMsg string = "User %s has banned. Reason: %s"
+	BanUserMsg string = "User has banned"
 	// UnbanUserMsg is log msg for unban action
-	UnbanUserMsg string = "User %s unbanned"
+	UnbanUserMsg string = "User unbanned"
 	// DeleteUserMsg is log msg for delete action
-	DeleteUserMsg string = "User %s has deleted. Reason: %s"
+	DeleteUserMsg string = "User has deleted"
 	// UpdateUserMsg is log msg for delete action
-	UpdateUserMsg string = "User %s updated"
+	UpdateUserMsg string = "User updated"
+
+	// ClientLogField is field for client logs
+	ClientLogField string = "client"
+	// SyncerLogField is field for client logs
+	SyncerLogField string = "syncer"
+	// GroupLogField is field for client logs
+	GroupLogField string = "group"
+	// UserLogField is field for client logs
+	UserLogField string = "user"
+	// ReasonLogField is field for client logs
+	ReasonLogField string = "reason"
 )
 
 // ErrValidate error type for general validation errors

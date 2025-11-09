@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/r9odt/go-logging"
 	"github.com/r9odt/ldap-syncer/internal/client/ldap"
 	"github.com/r9odt/ldap-syncer/internal/constant"
-	"github.com/r9odt/ldap-syncer/internal/logging"
 	"github.com/r9odt/ldap-syncer/internal/utils"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
@@ -41,7 +41,7 @@ type Syncer struct {
 }
 
 // New return the Syncer object for Gitlab
-func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
+func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, error) {
 	var (
 		c = &Syncer{
 			IsDryRun:                    utils.ParseBoolEnv(constant.IsDryRunEnv, false),
@@ -63,12 +63,7 @@ func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 		}
 	)
 
-	logger, err := logging.ConfigureLog(utils.ParseStringEnv(constant.LogFileEnv, "stdout"), utils.ParseStringEnv(constant.LogLevelEnv, "info"), "gitlab", !utils.ParseBoolEnv(constant.LogJSONEnv, false))
-
-	if err != nil {
-		return nil, err
-	}
-	c.Logger = logger
+	c.Logger = logger.Clone().String(constant.SyncerLogField, "gitlab")
 	c.ldapAllUsers = make(map[string]*User)
 	c.ldapExpiredUsers = make(map[string]bool)
 

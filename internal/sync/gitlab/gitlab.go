@@ -25,7 +25,8 @@ func (s *Syncer) Sync() {
 		gitlab.WithBaseURL(s.ApiURL),
 	)
 	if err != nil {
-		s.Logger.Errorf("Cannot create gitlab client: %s", err.Error())
+		s.Logger.
+			Error("Cannot create gitlab client: %s", err.Error())
 		return
 	}
 	for {
@@ -62,8 +63,9 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 
 	sr, err := s.Ldap.Connection.Search(allUsersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-			s.UsersLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.UsersLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 		return
 	}
 
@@ -75,7 +77,6 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		user.sshKeys = append(user.sshKeys, en.GetAttributeValues(s.Ldap.LdapSSHKeyAttr)...)
 		if len(username) > 0 {
 			s.ldapAllUsers[username] = user
-			s.Logger.Debugf("Created ldap user %s object %#v %#v", username, user, s.ldapAllUsers[username])
 		}
 	}
 
@@ -92,8 +93,9 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 
 	sr, err = s.Ldap.Connection.Search(adminUsersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-			s.AdminLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.AdminLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 		return
 	}
 
@@ -104,7 +106,9 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		}
 		if u, ok := s.ldapAllUsers[username]; ok {
 			u.isAdmin = true
-			s.Logger.Debugf("Set ldap user %s as admin", username)
+			s.Logger.
+				String(constant.UserLogField, username).
+				Debug("Set ldap user as admin")
 		}
 	}
 
@@ -122,8 +126,9 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 
 	sr, err = s.Ldap.Connection.Search(expiredUsersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf("Cannot search users for ldap group %s: %s",
-			s.UsersLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.UsersLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 		return
 	}
 
@@ -131,7 +136,9 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		username := en.GetAttributeValue(s.Ldap.LdapUsernameAttr)
 		if len(username) > 0 {
 			s.ldapExpiredUsers[username] = true
-			s.Logger.Debugf("Found expired password for ldap user %s", username)
+			s.Logger.
+				String(constant.UserLogField, username).
+				Debug("Found expired password for ldap user")
 		}
 	}
 }
@@ -154,8 +161,9 @@ func (s *Syncer) syncProjectLimits() {
 
 	gr, err := s.Ldap.Connection.Search(groupSearchRequest)
 	if err != nil {
-		s.Logger.Errorf("Cannot search ldap group with filter %s: %s",
-			filter, err.Error())
+		s.Logger.
+			Errorf("Cannot search ldap group with filter %s: %s",
+				filter, err.Error())
 		return
 	}
 
@@ -165,7 +173,10 @@ func (s *Syncer) syncProjectLimits() {
 			continue
 		}
 		limit := s.getProjectLimitFromGroupName(groupname)
-		s.Logger.Debugf("Find ldap group %s with limit %d", groupname, limit)
+		s.Logger.
+			String(constant.GroupLogField, groupname).
+			Debug("Found ldap group with limit %d",
+				limit)
 
 		// Find all users in group
 		membersSearchRequest := goldap.NewSearchRequest(
@@ -180,8 +191,9 @@ func (s *Syncer) syncProjectLimits() {
 
 		sr, err := s.Ldap.Connection.Search(membersSearchRequest)
 		if err != nil {
-			s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-				s.UsersLdapGroup, err.Error())
+			s.Logger.
+				String(constant.GroupLogField, s.UsersLdapGroup).
+				Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 			return
 		}
 
@@ -193,7 +205,9 @@ func (s *Syncer) syncProjectLimits() {
 			if u, ok := s.ldapAllUsers[username]; ok {
 				if u.projectLimit < limit {
 					u.projectLimit = limit
-					s.Logger.Debugf("Set ldap user %s project limit %d", username, limit)
+					s.Logger.
+						String(constant.UserLogField, username).
+						Debugf("Set ldap user project limit %d", limit)
 				}
 			}
 		}
@@ -217,8 +231,9 @@ func (s *Syncer) syncCanCreateTLGFlag() {
 
 	sr, err := s.Ldap.Connection.Search(usersSearchRequest)
 	if err != nil {
-		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-			s.UsersLdapGroup, err.Error())
+		s.Logger.
+			String(constant.GroupLogField, s.UsersLdapGroup).
+			Errorf(ldap.CannotSearchLdapUsersForGroupMsg, err.Error())
 		return
 	}
 
@@ -229,7 +244,9 @@ func (s *Syncer) syncCanCreateTLGFlag() {
 		}
 		if u, ok := s.ldapAllUsers[username]; ok {
 			u.canCreateTLG = true
-			s.Logger.Debugf("Set can create TLD for ldap user %s", username)
+			s.Logger.
+				String(constant.UserLogField, username).
+				Debug("Set can create TLD for ldap user")
 
 		}
 	}
@@ -248,7 +265,8 @@ func (s *Syncer) syncUsers() {
 	for {
 		glusers, resp, err := s.client.Users.ListUsers(opt, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf("Cannot list gitlab users: %s", err.Error())
+			s.Logger.
+				Errorf("Cannot list gitlab users: %s", err.Error())
 			return
 		}
 
@@ -272,12 +290,16 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 	for _, u := range glusers {
 		s.Logger.Debugf("Sync user %s", u.Username)
 		if u.Bot {
-			s.Logger.Infof(UserIsBotMsg, u.Username)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Info(UserIsBotMsg)
 			continue
 		}
 
 		if !s.isUserManagedByLdapProvider(u) {
-			s.Logger.Infof("User %s is not managed by ldap %s", u.Username, s.LdapProvider)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Infof("User is not managed by ldap %s", s.LdapProvider)
 			continue
 		}
 
@@ -304,38 +326,49 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 		if user.isAdmin != u.IsAdmin {
 			modifyOptions.Admin = &user.isAdmin
 			needUpdate = true
-			s.Logger.Infof(UpdateAdminFieldMsg, u.Username,
-				u.IsAdmin, user.isAdmin)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Infof(UpdateAdminFieldMsg,
+					u.IsAdmin, user.isAdmin)
 		}
 
 		if user.displayName != u.Name {
 			modifyOptions.Name = &user.displayName
 			needUpdate = true
-			s.Logger.Infof(UpdateAdminFieldMsg, u.Username,
-				u.Name, user.displayName)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Infof(UpdateAdminFieldMsg,
+					u.Name, user.displayName)
 		}
 
 		if user.canCreateTLG != u.CanCreateGroup {
 			modifyOptions.CanCreateGroup = &user.canCreateTLG
 			needUpdate = true
-			s.Logger.Infof(UpdateCanCreateTLGFieldMsg, u.Username,
-				u.CanCreateGroup, user.canCreateTLG)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Infof(UpdateCanCreateTLGFieldMsg,
+					u.CanCreateGroup, user.canCreateTLG)
 		}
 
 		if user.projectLimit != u.ProjectsLimit {
 			modifyOptions.ProjectsLimit = &user.projectLimit
 			needUpdate = true
-			s.Logger.Infof(UpdateProjectLimitFieldMsg, u.Username,
-				u.ProjectsLimit, user.projectLimit)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Infof(UpdateProjectLimitFieldMsg,
+					u.ProjectsLimit, user.projectLimit)
 		}
 
 		if needUpdate {
 			if !s.IsDryRun {
 				if _, _, err := s.client.Users.ModifyUser(u.ID, modifyOptions, gitlab.WithContext(s.Ctx)); err != nil {
-					s.Logger.Errorf("Modify user error: %s", err.Error())
+					s.Logger.
+						Errorf("Modify user error: %s", err.Error())
 				}
 			}
-			s.Logger.Infof(SaveUserMsg, u.Username)
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				Info(SaveUserMsg)
 		}
 
 		s.syncSSHKeys(u)
@@ -348,10 +381,15 @@ func (s *Syncer) banUser(user *gitlab.User, reason string) {
 	}
 	if !s.IsDryRun {
 		if err := s.client.Users.BanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
-			s.Logger.Errorf("Ban user error: %s", err.Error())
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Errorf("Ban user error: %s", err.Error())
 		}
 	}
-	s.Logger.Infof(constant.BanUserMsg, user.Username, reason)
+	s.Logger.
+		String(constant.UserLogField, user.Username).
+		String(constant.ReasonLogField, reason).
+		Infof(constant.BanUserMsg)
 }
 
 func (s *Syncer) unbanUser(user *gitlab.User) {
@@ -360,19 +398,28 @@ func (s *Syncer) unbanUser(user *gitlab.User) {
 	}
 	if !s.IsDryRun {
 		if err := s.client.Users.UnbanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
-			s.Logger.Errorf("Unban user error: %s", err.Error())
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Errorf("Unban user error: %s", err.Error())
 		}
 	}
-	s.Logger.Infof(constant.UnbanUserMsg, user.Username)
+	s.Logger.
+		String(constant.UserLogField, user.Username).
+		Infof(constant.UnbanUserMsg)
 }
 
 func (s *Syncer) deleteUser(user *gitlab.User, reason string) {
 	if !s.IsDryRun {
 		if _, err := s.client.Users.DeleteUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
-			s.Logger.Errorf("Delete user error: %s", err.Error())
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Errorf("Delete user error: %s", err.Error())
 		}
 	}
-	s.Logger.Infof(constant.DeleteUserMsg, user.Username, reason)
+	s.Logger.
+		String(constant.UserLogField, user.Username).
+		String(constant.ReasonLogField, reason).
+		Infof(constant.DeleteUserMsg)
 }
 
 // syncSSHKeys is sync procedure ssh keys (Only one direction FreeIPA -> Gitlab)
@@ -389,7 +436,9 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 	for {
 		keys, resp, err := s.client.Users.ListSSHKeysForUser(user.ID, opt, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf(CannotListSSHKeysMsg, user.Username, err.Error())
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Errorf(CannotListSSHKeysMsg, err.Error())
 			return
 		}
 
@@ -406,13 +455,17 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 	for _, key := range u.sshKeys {
 		ipaKeyArray := strings.Fields(key)
 		if len(ipaKeyArray) < 2 {
-			s.Logger.Warningf("One of ldap ssh keys for user %s doesn.t have protocol or key", user.Username)
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Warning("One of ldap ssh keys doesn.t have protocol or key")
 			continue
 		}
 
 		gitlabKeyID := s.isIPAKeyInGitLabKeys(ipaKeyArray, gitlabSSHKeys)
 		if gitlabKeyID > 0 {
-			s.Logger.Infof("Found existing ssh key for user %s with id %d", user.Username, gitlabKeyID)
+			s.Logger.
+				String(constant.UserLogField, user.Username).
+				Infof("Found existing ssh key for user with id %d", gitlabKeyID)
 			continue
 		}
 		title := fmt.Sprintf("%s %s", FreeIPAManagedSSHKeyTitlePrefix, keyDate)
@@ -429,12 +482,16 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 
 			key, _, err := s.client.Users.AddSSHKeyForUser(user.ID, keyOptions, gitlab.WithContext(s.Ctx))
 			if err != nil {
-				s.Logger.Errorf("Cannot add key for user %s: %s", user.Username, err.Error())
+				s.Logger.
+					String(constant.UserLogField, user.Username).
+					Errorf("Cannot add key for user: %s", err.Error())
 				continue
 			}
 			keyid = key.ID
 		}
-		s.Logger.Infof("Add key %d for user %s: %s", keyid, user.Username, title)
+		s.Logger.
+			String(constant.UserLogField, user.Username).
+			Infof("Add key %d for user: %s", keyid, title)
 	}
 
 	for _, gitlabKey := range gitlabSSHKeys {
@@ -450,10 +507,15 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 		if !s.IsDryRun {
 			_, err := s.client.Users.DeleteSSHKeyForUser(user.ID, gitlabKey.ID, gitlab.WithContext(s.Ctx))
 			if err != nil {
-				s.Logger.Errorf("Cannot delete key %d for user %s: %s", user.Username, gitlabKey.ID, err.Error())
+				s.Logger.
+					String(constant.UserLogField, user.Username).
+					Errorf("Cannot delete key %d for user: %s",
+						gitlabKey.ID, err.Error())
 			}
 		}
-		s.Logger.Infof("Remove key %d for user %s: %s", gitlabKey.ID, user.Username, gitlabKey.Title)
+		s.Logger.
+			String(constant.UserLogField, user.Username).
+			Infof("Remove key %d for user: %s", gitlabKey.ID, gitlabKey.Title)
 	}
 }
 
@@ -552,7 +614,7 @@ func (s *Syncer) stringToGitlabPermissions(group string) gitlab.AccessLevelValue
 }
 
 func (s *Syncer) syncGroups() {
-	s.Logger.Infof("Groups sync start")
+	s.Logger.Info("Groups sync start")
 	opt := &gitlab.ListGroupsOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: 100,
@@ -568,7 +630,7 @@ func (s *Syncer) syncGroups() {
 
 		select {
 		case <-s.Ctx.Done():
-			s.Logger.Warning("Interrupt users sync")
+			s.Logger.Warning("Interrupt group sync")
 			return
 		default:
 			s.syncGitlabGroupsParameters(glgroups)
@@ -579,12 +641,14 @@ func (s *Syncer) syncGroups() {
 		}
 		opt.Page = resp.NextPage
 	}
-	s.Logger.Infof("Groups sync done")
+	s.Logger.Info("Groups sync done")
 }
 
 func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
 	for _, g := range glgroups {
-		s.Logger.Infof("Sync group %s", g.FullPath)
+		s.Logger.
+			String(constant.GroupLogField, g.FullPath).
+			Info("Sync group")
 		ldapMembers, isExist := s.getGitlabGroupLdapMembers(g)
 		if !isExist {
 			continue
@@ -598,12 +662,17 @@ func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
 
 			user := s.getGitLabUserByID(m.ID)
 			if user.Bot {
-				s.Logger.Infof(UserIsBotMsg, user.Username)
+				s.Logger.
+					String(constant.UserLogField, user.Username).
+					String(constant.GroupLogField, g.FullPath).
+					Info(UserIsBotMsg)
 				continue
 			}
 
 			if !s.isUserManagedByLdapProvider(user) {
-				s.Logger.Infof("User %s is not managed by ldap %s", user.Username, s.LdapProvider)
+				s.Logger.
+					String(constant.UserLogField, user.Username).
+					Info("User is not managed by ldap %s", s.LdapProvider)
 				continue
 			}
 
@@ -636,7 +705,10 @@ func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
 
 			u := s.getGitLabUserByName(username)
 			if u == nil {
-				s.Logger.Warningf("User %s can.t be added to group %s because it not exist in gitlab. User need to login before sync.", username, g.FullPath)
+				s.Logger.
+					String(constant.UserLogField, username).
+					String(constant.GroupLogField, g.FullPath).
+					Warning("User can.t be added to group because it not exist in gitlab. User need to login before sync.")
 				continue
 			}
 
@@ -649,11 +721,17 @@ func (s *Syncer) removeGroupMember(g *gitlab.Group, u *gitlab.User) {
 	if !s.IsDryRun {
 		_, err := s.client.GroupMembers.RemoveGroupMember(g.ID, u.ID, &gitlab.RemoveGroupMemberOptions{}, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf("Cannot remove group %s member %s: %s", g.FullPath, u.Username, err.Error())
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				String(constant.GroupLogField, g.FullPath).
+				Errorf("Cannot remove group member: %s", err.Error())
 			return
 		}
 	}
-	s.Logger.Infof("Remove %s from group %s", u.Username, g.FullPath)
+	s.Logger.
+		String(constant.UserLogField, u.Username).
+		String(constant.GroupLogField, g.FullPath).
+		Info("Remove user from group")
 }
 
 func (s *Syncer) createGroupMember(g *gitlab.Group, u *gitlab.User, level gitlab.AccessLevelValue) {
@@ -665,11 +743,17 @@ func (s *Syncer) createGroupMember(g *gitlab.Group, u *gitlab.User, level gitlab
 		}
 		_, _, err := s.client.GroupMembers.AddGroupMember(g.ID, opt, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf("Cannot create group %s member %s: %s", g.FullPath, u.Username, err.Error())
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				String(constant.GroupLogField, g.FullPath).
+				Errorf("Cannot create group member: %s", err.Error())
 			return
 		}
 	}
-	s.Logger.Infof("Add %s to group %s with level %d", u.Username, g.FullPath, accessLevel)
+	s.Logger.
+		String(constant.UserLogField, u.Username).
+		String(constant.GroupLogField, g.FullPath).
+		Infof("Add to group with level %d", accessLevel)
 }
 
 func (s *Syncer) fixGroupMemberAccess(g *gitlab.Group, u *gitlab.GroupMember, level gitlab.AccessLevelValue) {
@@ -683,11 +767,17 @@ func (s *Syncer) fixGroupMemberAccess(g *gitlab.Group, u *gitlab.GroupMember, le
 		}
 		_, _, err := s.client.GroupMembers.EditGroupMember(g.ID, u.ID, opt, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf("Cannot create group %s member %s: %s", g.FullPath, u.Username, err.Error())
+			s.Logger.
+				String(constant.UserLogField, u.Username).
+				String(constant.GroupLogField, g.FullPath).
+				Errorf("Cannot create group member: %s", err.Error())
 			return
 		}
 	}
-	s.Logger.Infof("Update access level for %s in group %s: %d->%d", u.Username, g.FullPath, u.AccessLevel, accessLevel)
+	s.Logger.
+		String(constant.UserLogField, u.Username).
+		String(constant.GroupLogField, g.FullPath).
+		Infof("Update access level for user in group %s: %d->%d", u.AccessLevel, accessLevel)
 }
 
 func (s *Syncer) isUserManagedByLdapProvider(user *gitlab.User) bool {
@@ -744,7 +834,9 @@ func (s *Syncer) getGitLabGroupMembers(group *gitlab.Group) map[string]*gitlab.G
 	for {
 		gitlabMembers, resp, err := s.client.Groups.ListGroupMembers(group.ID, opt, gitlab.WithContext(s.Ctx))
 		if err != nil {
-			s.Logger.Errorf("Cannot list gitlab group %s members: %s", group.FullPath, err.Error())
+			s.Logger.
+				String(constant.GroupLogField, group.FullPath).
+				Errorf("Cannot list gitlab group members: %s", err.Error())
 			return members
 		}
 
@@ -807,8 +899,10 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 
 		gsr, err := s.Ldap.Connection.Search(usersSearchRequest)
 		if err != nil {
-			s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
-				s.UsersLdapGroup, err.Error())
+			s.Logger.
+				String(constant.GroupLogField, s.UsersLdapGroup).
+				Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
+					s.UsersLdapGroup, err.Error())
 			return members, isExist
 		}
 

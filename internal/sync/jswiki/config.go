@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/r9odt/go-logging"
 	"github.com/r9odt/ldap-syncer/internal/client/ldap"
 	"github.com/r9odt/ldap-syncer/internal/constant"
-	"github.com/r9odt/ldap-syncer/internal/logging"
 	"github.com/r9odt/ldap-syncer/internal/utils"
 )
 
@@ -39,7 +39,7 @@ type Syncer struct {
 }
 
 // New return the Syncer object for Gitlab
-func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
+func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, error) {
 	var (
 		c = &Syncer{
 			IsDryRun:        utils.ParseBoolEnv(constant.IsDryRunEnv, false),
@@ -60,12 +60,7 @@ func New(ctx context.Context, l *ldap.Config) (*Syncer, error) {
 		Timeout: 2 * time.Second,
 	}
 
-	logger, err := logging.ConfigureLog(utils.ParseStringEnv(constant.LogFileEnv, "stdout"), utils.ParseStringEnv(constant.LogLevelEnv, "info"), "jswiki", !utils.ParseBoolEnv(constant.LogJSONEnv, false))
-
-	if err != nil {
-		return nil, err
-	}
-	c.Logger = logger
+	c.Logger = logger.Clone().String(constant.SyncerLogField, "jswiki")
 	c.jswikiUsers = make(map[int]*JsWikiUser)
 	c.jswikiGroups = make(map[int]*JsWikiGroup)
 

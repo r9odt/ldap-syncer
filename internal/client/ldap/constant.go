@@ -17,7 +17,7 @@ const (
 	GroupExpiredMembersFilter string = "(&(memberof=cn=%s,%s)(!(nsaccountlock=TRUE))(krbPasswordExpiration<=%sZ))"
 
 	// CannotSearchLdapUsersForGroupMsg log message for search errors
-	CannotSearchLdapUsersForGroupMsg string = "Can.t search ldap users for group %s: %s"
+	CannotSearchLdapUsersForGroupMsg string = "Can.t search ldap users for group: %s"
 
 	// CannotSearchLdapGroupsMsg is message for group ldap search error
 	CannotSearchLdapGroupsMsg string = "Can.t search ldap groups with filter %s: %s"

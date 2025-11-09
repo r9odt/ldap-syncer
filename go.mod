@@ -4,6 +4,7 @@ go 1.25.1
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.11
+	github.com/r9odt/go-logging v1.0.0
 	github.com/rs/zerolog v1.34.0
 	gitlab.com/gitlab-org/api/client-go v0.148.0
 )

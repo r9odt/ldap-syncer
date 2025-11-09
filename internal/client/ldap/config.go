@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/go-ldap/ldap/v3"
+	"github.com/r9odt/go-logging"
 	"github.com/r9odt/ldap-syncer/internal/constant"
-	"github.com/r9odt/ldap-syncer/internal/logging"
 	"github.com/r9odt/ldap-syncer/internal/utils"
 )
 
@@ -27,7 +27,7 @@ type Config struct {
 	Connection *ldap.Conn
 }
 
-func New(ctx context.Context) (*Config, error) {
+func New(ctx context.Context, logger logging.Logger) (*Config, error) {
 	var (
 		c = &Config{
 			Ctx:                       ctx,
@@ -44,11 +44,7 @@ func New(ctx context.Context) (*Config, error) {
 		}
 	)
 
-	logger, err := logging.ConfigureLog(utils.ParseStringEnv(constant.LogFileEnv, "stdout"), utils.ParseStringEnv(constant.LogLevelEnv, "info"), "ldap", !utils.ParseBoolEnv(constant.LogJSONEnv, false))
-	if err != nil {
-		return nil, err
-	}
-	c.Logger = logger
+	c.Logger = logger.Clone().String(constant.ClientLogField, "ldap")
 
 	return c, c.validate()
 }

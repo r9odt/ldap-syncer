@@ -4,21 +4,20 @@ import (
 	"fmt"
 
 	"github.com/go-ldap/ldap/v3"
+	"github.com/r9odt/ldap-syncer/internal/constant"
 )
 
 // Connect is Ldap Connection without TLS
 func (c *Config) Connect() error {
 	l, err := ldap.DialURL(c.LdapURL)
 	if err != nil {
-		c.Logger.Errorf("Cannot connect to %s: %s",
-			c.LdapURL, err.Error())
+		c.Logger.Errorf("Cannot connect to %s: %s", c.LdapURL, err.Error())
 		return err
 	}
 
 	err = l.Bind(c.LdapBindDN, c.LdapBindPW)
 	if err != nil {
-		c.Logger.Errorf("Cannot bind ldap to %s: %s",
-			c.LdapBindDN, err.Error())
+		c.Logger.Errorf("Cannot bind ldap to %s: %s", c.LdapBindDN, err.Error())
 		return err
 	}
 	c.Connection = l
@@ -28,7 +27,7 @@ func (c *Config) Connect() error {
 // Close ldap connection.
 func (c *Config) Close() {
 	if err := c.Connection.Close(); err != nil {
-		c.Logger.Errorf("Closing connection error: %s", err.Error())
+		c.Logger.Error("Closing connection error: %s", err.Error())
 	}
 }
 
@@ -48,8 +47,9 @@ func (s *Config) IsLdapUserExist(username string) (error, bool) {
 
 	sr, err := s.Connection.Search(userSearchRequest)
 	if err != nil {
-		s.Logger.Errorf("Cannot search user %s: %s",
-			username, err.Error())
+		s.Logger.
+			String(constant.UserLogField, username).
+			Error("Cannot search user: %s")
 		return err, false
 	}
 
