@@ -5,7 +5,6 @@ go 1.25.1
 require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/r9odt/go-logging v1.0.0
-	github.com/rs/zerolog v1.34.0
 	gitlab.com/gitlab-org/api/client-go v0.148.0
 )
 
@@ -18,6 +17,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.46.0 // indirect
