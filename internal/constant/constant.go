@@ -123,6 +123,8 @@ const (
 	UserLogField string = "user"
 	// ReasonLogField is field for client logs
 	ReasonLogField string = "reason"
+	// LdapProviderLogField is field for client logs
+	LdapProviderLogField string = "provider"
 )
 
 // ErrValidate error type for general validation errors

@@ -299,7 +299,8 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 		if !s.isUserManagedByLdapProvider(u) {
 			s.Logger.
 				String(constant.UserLogField, u.Username).
-				Infof("User is not managed by ldap %s", s.LdapProvider)
+				String(constant.LdapProviderLogField, s.LdapProvider).
+				Info("User is not managed by ldap")
 			continue
 		}
 
@@ -672,7 +673,8 @@ func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
 			if !s.isUserManagedByLdapProvider(user) {
 				s.Logger.
 					String(constant.UserLogField, user.Username).
-					Info("User is not managed by ldap %s", s.LdapProvider)
+					String(constant.LdapProviderLogField, s.LdapProvider).
+					Info("User is not managed by ldap")
 				continue
 			}
 
