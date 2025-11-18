@@ -288,7 +288,9 @@ func (s *Syncer) syncUsers() {
 
 func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 	for _, u := range glusers {
-		s.Logger.Debugf("Sync user %s", u.Username)
+		s.Logger.
+			String(constant.UserLogField, u.Username).
+			Debug("Sync user")
 		if u.Bot {
 			s.Logger.
 				String(constant.UserLogField, u.Username).
