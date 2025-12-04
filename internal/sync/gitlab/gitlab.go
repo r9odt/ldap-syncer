@@ -40,6 +40,8 @@ func (s *Syncer) Sync() {
 }
 
 func (s *Syncer) sync() {
+	s.ldapAllUsers = make(map[string]*User)
+	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
 	s.getGitlabUsersFromLdap()
 	s.syncUsers()

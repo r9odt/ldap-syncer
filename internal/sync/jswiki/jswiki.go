@@ -32,6 +32,10 @@ func (s *Syncer) Sync() {
 }
 
 func (s *Syncer) sync() {
+	s.jswikiUsers = make(map[int]*JsWikiUser)
+	s.jswikiGroups = make(map[int]*JsWikiGroup)
+	s.ldapAllUsers = make(map[string]*User)
+	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
 	var err error
 	err = s.getJsWikiUsersFromLdap()

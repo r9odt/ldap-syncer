@@ -61,11 +61,6 @@ func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, e
 	}
 
 	c.Logger = logger.Clone().String(constant.SyncerLogField, "jswiki")
-	c.jswikiUsers = make(map[int]*JsWikiUser)
-	c.jswikiGroups = make(map[int]*JsWikiGroup)
-
-	c.ldapAllUsers = make(map[string]*User)
-	c.ldapExpiredUsers = make(map[string]bool)
 
 	return c, c.validate()
 }
