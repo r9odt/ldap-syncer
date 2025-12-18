@@ -447,7 +447,7 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 	expiredUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
 		goldap.ScopeSingleLevel, goldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf(ldap.GroupExpiredMembersFilter, goldap.EscapeFilter(s.UsersLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN), goldap.EscapeFilter(expireDate)),
+		fmt.Sprintf(ldap.GroupExpiredMembersFilter, goldap.EscapeFilter(s.UsersLdapGroup), goldap.EscapeFilter(s.Ldap.LdapGroupsBaseDN), goldap.EscapeFilter(expireDate), goldap.EscapeFilter(expireDate)),
 		[]string{
 			s.Ldap.LdapUsernameAttr,
 		},

@@ -14,7 +14,7 @@ const (
 	// GroupExpiredMembersFilter return filter for ldap to get
 	// blocked members of group users.
 	// Uses group name, base group dn and expire date in "20060102150405" format.
-	GroupExpiredMembersFilter string = "(&(memberof=cn=%s,%s)(!(nsaccountlock=TRUE))(krbPasswordExpiration<=%sZ))"
+	GroupExpiredMembersFilter string = "(&(memberof=cn=%s,%s)(!(nsaccountlock=TRUE))(|(krbPasswordExpiration<=%sZ)(krbPrincipalExpiration<=%sZ)))"
 
 	// CannotSearchLdapUsersForGroupMsg log message for search errors
 	CannotSearchLdapUsersForGroupMsg string = "Can.t search ldap users for group: %s"
