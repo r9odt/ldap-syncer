@@ -414,7 +414,7 @@ func (s *Syncer) unbanUser(user *gitlab.User) {
 }
 
 func (s *Syncer) deleteUser(user *gitlab.User, reason string) {
-	if !s.IsDryRun {
+	if !s.IsDryRun && s.AllowDeleteUsers {
 		if _, err := s.client.Users.DeleteUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
 			s.Logger.
 				String(constant.UserLogField, user.Username).

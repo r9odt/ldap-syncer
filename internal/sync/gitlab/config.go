@@ -16,6 +16,7 @@ type Syncer struct {
 	IsDryRun bool
 	Enabled  bool
 
+	AllowDeleteUsers            bool
 	ApiURL                      string
 	Token                       string
 	LdapProvider                string
@@ -48,6 +49,7 @@ func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, e
 			Enabled:                     utils.ParseBoolEnv(constant.IsGilabSyncEnabledEnv, true),
 			Ctx:                         ctx,
 			Ldap:                        l,
+			AllowDeleteUsers:            utils.ParseBoolEnv(constant.GitlabAllowDeleteUsers, true),
 			SyncInterval:                utils.ParseDurationEnv(constant.GitlabSyncIntervalEnv, 30*time.Minute),
 			ApiURL:                      utils.ParseStringEnv(constant.GitlabApiURLEnv, ""),
 			Token:                       utils.ParseStringEnv(constant.GitlabTokenEnv, ""),

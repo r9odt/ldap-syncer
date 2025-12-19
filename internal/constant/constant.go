@@ -62,6 +62,8 @@ const (
 	GitlabUserDefaultCanCreateTLGEnv string = "GITLAB_USER_DEFAULT_CAN_CREATE_TLG"
 	// GitlabUserCanCreateTLGLdapGroupEnv environment variable name
 	GitlabUserCanCreateTLGLdapGroupEnv string = "LDAP_GITLAB_USER_CAN_CREATE_TLG_GROUP"
+	// GitlabAllowDeleteUsers environment variable name
+	GitlabAllowDeleteUsers string = "GITLAB_ALLOW_DELETE_USERS"
 
 	// JsWikiApiURLEnv environment variable name
 	JsWikiApiURLEnv string = "JSWIKI_API_URL"
@@ -77,6 +79,8 @@ const (
 	JsWikiAdminLdapGroupEnv string = "LDAP_JSWIKI_ADMIN_GROUP"
 	// LdapGroupPrefixEnv environment variable name
 	JsWikiLdapGroupPrefixEnv string = "LDAP_JSWIKI_GROUP_PREFIX"
+	// JsWikiAllowDeleteUsers environment variable name
+	JsWikiAllowDeleteUsers string = "JSWIKI_ALLOW_DELETE_USERS"
 )
 
 const (

@@ -167,7 +167,7 @@ func (s *Syncer) enableUser(user *JsWikiUser) error {
 }
 
 func (s *Syncer) deleteUser(user *JsWikiUser, reason string) error {
-	if !s.IsDryRun {
+	if !s.IsDryRun && s.AllowDeleteUsers {
 		jsWikiReq, err := json.Marshal(types.NewGraphqlQuery(fmt.Sprintf(JsWikiDeleteUserQuery, user.Id)))
 		if err != nil {
 			s.Logger.Errorf(constant.CannotCreateQueryMsg, err.Error())
@@ -535,7 +535,7 @@ func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
 				s.Logger.
 					String(constant.UserLogField, username).
 					String(constant.GroupLogField, groupname).
-					Warning("User can.t be added to groupbecause it not exist in jswiki. User need to login before sync.")
+					Warning("User can.t be added to group because it not exist in jswiki. User need to login before sync.")
 				continue
 			}
 			members[s.ldapAllUsers[username].id] = true

@@ -33,6 +33,7 @@ Configuration via environment variables.
 ### Gitlab syncer parameters
 
 - SYNC_GITLAB_ENABLED: Is sync for gitlab enabled
+- GITLAB_ALLOW_DELETE_USERS: Allow to delete users. Default: `true`
 - GITLAB_SYNC_INTERVAL: Time interval for sync. Default: `30m`
 - GITLAB_API_URL: URL for accessing Gitlab (e.g. <https://gitlab.example.com>). Required value.
 - GITLAB_TOKEN: Token for working with the Gitlab API. (e.g. `glpat-xxxxx`). Required value.
@@ -53,6 +54,7 @@ Configuration via environment variables.
 ### JsWiki syncer parameters
 
 - SYNC_JSWIKI_ENABLED: Is sync for jswiki enabled
+- JSWIKI_ALLOW_DELETE_USERS: Allow to delete users. Default: `true`
 - JSWIKI_API_URL: URL for accessing JsWiki GraphQL (e.g. <https://jswiki.example.com/graphql>). Required value.
 - JSWIKI_TOKEN: Token for working with the JsWiki API. (e.g. `glpat-xxxxx`). Required value.
 - JSWIKI_USERS_TZ: Default value for `timezone` user property. Default: `Asia/Krasnoyarsk`

@@ -16,12 +16,13 @@ type Syncer struct {
 	IsDryRun bool
 	Enabled  bool
 
-	ApiURL          string
-	Token           string
-	UsersLdapGroup  string
-	AdminLdapGroup  string
-	LdapGroupPrefix string
-	UsersTZ         string
+	AllowDeleteUsers bool
+	ApiURL           string
+	Token            string
+	UsersLdapGroup   string
+	AdminLdapGroup   string
+	LdapGroupPrefix  string
+	UsersTZ          string
 
 	SyncInterval time.Duration
 
@@ -42,17 +43,18 @@ type Syncer struct {
 func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, error) {
 	var (
 		c = &Syncer{
-			IsDryRun:        utils.ParseBoolEnv(constant.IsDryRunEnv, false),
-			Enabled:         utils.ParseBoolEnv(constant.IsJsWikiSyncEnabledEnv, true),
-			Ctx:             ctx,
-			Ldap:            l,
-			SyncInterval:    utils.ParseDurationEnv(constant.JsWikiSyncIntervalEnv, 30*time.Minute),
-			ApiURL:          utils.ParseStringEnv(constant.JsWikiApiURLEnv, ""),
-			Token:           utils.ParseStringEnv(constant.JsWikiTokenEnv, ""),
-			UsersLdapGroup:  utils.ParseStringEnv(constant.JsWikiUsersLdapGroupEnv, "jswiki-users"),
-			AdminLdapGroup:  utils.ParseStringEnv(constant.JsWikiAdminLdapGroupEnv, "jswiki-admins"),
-			LdapGroupPrefix: utils.ParseStringEnv(constant.JsWikiLdapGroupPrefixEnv, "jswiki-role-"),
-			UsersTZ:         utils.ParseStringEnv(constant.JsWikiUsersTZEnv, "Asia/Krasnoyarsk"),
+			IsDryRun:         utils.ParseBoolEnv(constant.IsDryRunEnv, false),
+			Enabled:          utils.ParseBoolEnv(constant.IsJsWikiSyncEnabledEnv, true),
+			Ctx:              ctx,
+			Ldap:             l,
+			AllowDeleteUsers: utils.ParseBoolEnv(constant.JsWikiAllowDeleteUsers, true),
+			SyncInterval:     utils.ParseDurationEnv(constant.JsWikiSyncIntervalEnv, 30*time.Minute),
+			ApiURL:           utils.ParseStringEnv(constant.JsWikiApiURLEnv, ""),
+			Token:            utils.ParseStringEnv(constant.JsWikiTokenEnv, ""),
+			UsersLdapGroup:   utils.ParseStringEnv(constant.JsWikiUsersLdapGroupEnv, "jswiki-users"),
+			AdminLdapGroup:   utils.ParseStringEnv(constant.JsWikiAdminLdapGroupEnv, "jswiki-admins"),
+			LdapGroupPrefix:  utils.ParseStringEnv(constant.JsWikiLdapGroupPrefixEnv, "jswiki-role-"),
+			UsersTZ:          utils.ParseStringEnv(constant.JsWikiUsersTZEnv, "Asia/Krasnoyarsk"),
 		}
 	)
 
