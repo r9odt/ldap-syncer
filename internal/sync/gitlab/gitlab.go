@@ -310,10 +310,12 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 
 		if _, ok := s.ldapAllUsers[u.Username]; !ok {
 			err, ok := s.Ldap.IsLdapUserExist(u.Username)
-			if err == nil && ok {
-				s.banUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
-			} else {
-				s.deleteUser(u, constant.DeletedInLdapReasonMsg)
+			if err == nil {
+				if ok {
+					s.banUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
+				} else {
+					s.deleteUser(u, constant.DeletedInLdapReasonMsg)
+				}
 			}
 			continue
 		}

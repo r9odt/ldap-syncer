@@ -49,7 +49,7 @@ func (s *Config) IsLdapUserExist(username string) (error, bool) {
 	if err != nil {
 		s.Logger.
 			String(constant.UserLogField, username).
-			Error("Cannot search user: %s")
+			Error("Cannot search user:")
 		return err, false
 	}
 
