@@ -14,7 +14,7 @@ const (
 	UpdateDisplayNameFieldMsg string = "Update name %s->%s"
 	// UpdateCanCreateTLGFieldMsg is log msg for update can_create_group user field
 	UpdateCanCreateTLGFieldMsg string = "Update can_create_group %t->%t"
-	// UpdateProjectLimitFieldMsg is log msg for update is_admin user field
+	// UpdateProjectLimitFieldMsg is log msg for update projects_limit user field
 	UpdateProjectLimitFieldMsg string = "Update projects_limit %d->%d"
 
 	// FreeIPAManagedSSHKeyTitlePrefix is prefix for ssh keys title

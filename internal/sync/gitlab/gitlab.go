@@ -344,7 +344,7 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 			needUpdate = true
 			s.Logger.
 				String(constant.UserLogField, u.Username).
-				Infof(UpdateAdminFieldMsg,
+				Infof(UpdateDisplayNameFieldMsg,
 					u.Name, user.displayName)
 		}
 
