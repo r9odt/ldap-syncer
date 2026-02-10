@@ -38,6 +38,11 @@ func (s *Syncer) sync() {
 	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
 	var err error
+	err = s.Ldap.Connect()
+	if err != nil {
+		s.Logger.Errorf("LDAP Connect error: %s", err.Error())
+		return
+	}
 	err = s.getJsWikiUsersFromLdap()
 	if err != nil {
 		return
@@ -53,6 +58,10 @@ func (s *Syncer) sync() {
 
 	s.syncUsers()
 	s.syncGroups()
+
+	if err = s.Ldap.Connection.Close(); err != nil {
+		s.Logger.Errorf("LDAP close connection error: %s", err.Error())
+	}
 }
 
 func (s *Syncer) syncUsers() {

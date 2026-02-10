@@ -12,7 +12,6 @@ import (
 )
 
 type Config struct {
-	Ldap   *ldap.Config
 	Gitlab *gitlab.Syncer
 	JsWiki *jswiki.Syncer
 
@@ -41,7 +40,6 @@ func New(ctx context.Context) (*Config, error) {
 		return c, constant.ErrValidate
 	}
 
-	c.Ldap = l
 	c.Gitlab = g
 	c.JsWiki = j
 	logger.Debugf("%#v", c)

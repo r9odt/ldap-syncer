@@ -33,7 +33,7 @@ type Syncer struct {
 
 	Logger logging.Logger
 	Ctx    context.Context
-	Ldap   *ldap.Config
+	Ldap   ldap.Config
 
 	client *gitlab.Client
 
@@ -42,7 +42,7 @@ type Syncer struct {
 }
 
 // New return the Syncer object for Gitlab
-func New(ctx context.Context, l *ldap.Config, logger logging.Logger) (*Syncer, error) {
+func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, error) {
 	var (
 		c = &Syncer{
 			IsDryRun:                    utils.ParseBoolEnv(constant.IsDryRunEnv, false),

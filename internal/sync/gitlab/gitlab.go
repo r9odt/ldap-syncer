@@ -43,9 +43,18 @@ func (s *Syncer) sync() {
 	s.ldapAllUsers = make(map[string]*User)
 	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
+	err := s.Ldap.Connect()
+	if err != nil {
+		s.Logger.Errorf("LDAP Connect error: %s", err.Error())
+		return
+	}
 	s.getGitlabUsersFromLdap()
 	s.syncUsers()
 	s.syncGroups()
+
+	if err = s.Ldap.Connection.Close(); err != nil {
+		s.Logger.Errorf("LDAP close connection error: %s", err.Error())
+	}
 }
 
 func (s *Syncer) getGitlabUsersFromLdap() {

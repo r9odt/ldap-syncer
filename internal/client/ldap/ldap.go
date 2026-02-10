@@ -18,6 +18,7 @@ func (c *Config) Connect() error {
 	err = l.Bind(c.LdapBindDN, c.LdapBindPW)
 	if err != nil {
 		c.Logger.Errorf("Cannot bind ldap to %s: %s", c.LdapBindDN, err.Error())
+		l.Close()
 		return err
 	}
 	c.Connection = l

@@ -27,9 +27,9 @@ type Config struct {
 	Connection *ldap.Conn
 }
 
-func New(ctx context.Context, logger logging.Logger) (*Config, error) {
+func New(ctx context.Context, logger logging.Logger) (Config, error) {
 	var (
-		c = &Config{
+		c = Config{
 			Ctx:                       ctx,
 			LdapURL:                   utils.ParseStringEnv(constant.LdapURLEnv, ""),
 			LdapBindDN:                utils.ParseStringEnv(constant.LdapBindDNEnv, ""),
