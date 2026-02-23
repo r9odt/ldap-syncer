@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.25.1 AS build
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.26.0 AS build
 
 ENV GO_SRC=/usr/local/go/src
 WORKDIR ${GO_SRC}/github.com/r9odt/ldap-syncer
