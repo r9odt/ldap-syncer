@@ -108,12 +108,12 @@ const (
 	DeletedInLdapReasonMsg string = "Deleted in ldap"
 	// DisabledOrExcludeFromGroupReasonMsg is log msg for disabled or exclude from access group ban reason
 	DisabledOrExcludeFromGroupReasonMsg string = "Disabled in ldap or excluded from access group"
-	// BanUserMsg is log msg for ban action
-	BanUserMsg string = "User has banned"
-	// UnbanUserMsg is log msg for unban action
-	UnbanUserMsg string = "User unbanned"
+	// BlockUserMsg is log msg for ban action
+	BlockUserMsg string = "User has been blocked"
+	// UnblockUserMsg is log msg for unban action
+	UnblockUserMsg string = "User has been unblocked"
 	// DeleteUserMsg is log msg for delete action
-	DeleteUserMsg string = "User has deleted"
+	DeleteUserMsg string = "User deleted"
 	// UpdateUserMsg is log msg for delete action
 	UpdateUserMsg string = "User updated"
 

@@ -151,7 +151,7 @@ func (s *Syncer) disableUser(user *JsWikiUser, reason string) error {
 	s.Logger.
 		String(constant.UserLogField, user.ProviderId).
 		String(constant.ReasonLogField, reason).
-		Info(constant.BanUserMsg)
+		Info(constant.BlockUserMsg)
 	return nil
 }
 
@@ -173,7 +173,7 @@ func (s *Syncer) enableUser(user *JsWikiUser) error {
 	}
 	s.Logger.
 		String(constant.UserLogField, user.ProviderId).
-		Info(constant.UnbanUserMsg)
+		Info(constant.UnblockUserMsg)
 	return nil
 }
 

@@ -321,7 +321,7 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 			err, ok := s.Ldap.IsLdapUserExist(u.Username)
 			if err == nil {
 				if ok {
-					s.banUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
+					s.blockUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
 				} else {
 					s.deleteUser(u, constant.DeletedInLdapReasonMsg)
 				}
@@ -330,11 +330,11 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 		}
 
 		if _, ok := s.ldapExpiredUsers[u.Username]; ok {
-			s.banUser(u, constant.ExpiredPasswordReasonMsg)
+			s.blockUser(u, constant.ExpiredPasswordReasonMsg)
 			continue
 		}
 
-		s.unbanUser(u)
+		s.unblockUser(u)
 
 		needUpdate := false
 		user := s.ldapAllUsers[u.Username]
@@ -391,37 +391,37 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 	}
 }
 
-func (s *Syncer) banUser(user *gitlab.User, reason string) {
+func (s *Syncer) blockUser(user *gitlab.User, reason string) {
 	if user.State != "active" {
 		return
 	}
 	if !s.IsDryRun {
-		if err := s.client.Users.BanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
+		if err := s.client.Users.BlockUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
 			s.Logger.
 				String(constant.UserLogField, user.Username).
-				Errorf("Ban user error: %s", err.Error())
+				Errorf("Block user error: %s", err.Error())
 		}
 	}
 	s.Logger.
 		String(constant.UserLogField, user.Username).
 		String(constant.ReasonLogField, reason).
-		Infof(constant.BanUserMsg)
+		Infof(constant.BlockUserMsg)
 }
 
-func (s *Syncer) unbanUser(user *gitlab.User) {
-	if user.State != "banned" {
+func (s *Syncer) unblockUser(user *gitlab.User) {
+	if user.State != "blocked" {
 		return
 	}
 	if !s.IsDryRun {
-		if err := s.client.Users.UnbanUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
+		if err := s.client.Users.UnblockUser(user.ID, gitlab.WithContext(s.Ctx)); err != nil {
 			s.Logger.
 				String(constant.UserLogField, user.Username).
-				Errorf("Unban user error: %s", err.Error())
+				Errorf("Unblock user error: %s", err.Error())
 		}
 	}
 	s.Logger.
 		String(constant.UserLogField, user.Username).
-		Infof(constant.UnbanUserMsg)
+		Infof(constant.UnblockUserMsg)
 }
 
 func (s *Syncer) deleteUser(user *gitlab.User, reason string) {
