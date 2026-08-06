@@ -5,7 +5,7 @@ type User struct {
 	isAdmin      bool
 	displayName  string
 	canCreateTLG bool
-	projectLimit int
+	projectLimit int64
 	sshKeys      []string
 }
 

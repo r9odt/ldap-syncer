@@ -62,6 +62,18 @@ func ParseIntEnv(env string, defval int) int {
 	return defval
 }
 
+func ParseInt64Env(env string, defval int64) int64 {
+	var arg string
+	if arg = os.Getenv(env); arg != "" {
+		val, err := strconv.ParseInt(arg, 10, 64)
+		if err == nil {
+			return val
+		}
+	}
+
+	return defval
+}
+
 func AbsInt(x int) int {
 	if x < 0 {
 		return -x

@@ -39,17 +39,23 @@ Configuration via environment variables.
 - GITLAB_TOKEN: Token for working with the Gitlab API. (e.g. `glpat-xxxxx`). Required value.
 - GITLAB_LDAP_PROVIDER: Name of the LDAP provider as configured in Gitlab's LDAP settings.
 (e.g. `ldapmain`. You can find it in the GitLab configuration or in the Admin Area by viewing the Identities tab of an existing user from your provider). Default: `ldapmain`.
-- LDAP_GITLAB_USERS_GROUP: Group allowed to access Gitlab. Accounts are synchronized based on this group. Accounts not in this group are set to the banned state. Default value: `gitlab-users`.
-- LDAP_GITLAB_ADMIN_GROUP: Group whose members have administrator rights in Gitlab. Default value: `gitlab-admins`.
-- LDAP_GITLAB_GROUP_PREFIX: Prefix for LDAP groups used to synchronize Gitlab group members. Groups must already exist in Gitlab. Default value: `gitlab-group-`.
-- LDAP_GITLAB_PROJECT_LIMIT_GROUP_PREFIX: Prefix for LDAP groups used to synchronize Gitlab users project limit. Default value: `gitlab-prlimit-`.
+- GITLAB_LDAP_USERS_GROUP: Group allowed to access Gitlab. Accounts are synchronized based on this group. Accounts not in this group are set to the banned state. Default value: `gitlab-users`.
+- GITLAB_LDAP_ADMIN_GROUP: Group whose members have administrator rights in Gitlab. Default value: `gitlab-admins`.
+- GITLAB_LDAP_GROUP_PREFIX: Prefix for LDAP groups used to synchronize Gitlab group members. Groups must already exist in Gitlab. Default value: `gitlab-group-`.
+- GITLAB_LDAP_PROJECT_LIMIT_GROUP_PREFIX: Prefix for LDAP groups used to synchronize Gitlab users project limit. Default value: `gitlab-prlimit-`.
 - GITLAB_GROUP_DEFAULT_ACCESS_LEVEL: Default access level for users in a group (if the group is specified without a role suffix). Allowed values: `owner`, `maintainer`, `developer`, `reporter`, `guest`. Default value: `reporter`
 - GITLAB_USER_DEFAULT_PROJECT_LIMIT: Default project limit for users.
-  Uses this value when user excluded from any `{LDAP_GITLAB_PROJECT_LIMIT_PREFIX}-{LIMIT}` groups.
+  Uses this value when user excluded from any `{GITLAB_LDAP_PROJECT_LIMIT_PREFIX}-{LIMIT}` groups.
   Default value 20.
 - GITLAB_USER_DEFAULT_CAN_CREATE_TLG: Default value for `can_create_group` user flag. Default: `false`.
-- LDAP_GITLAB_USER_CAN_CREATE_TLG_GROUP: Group to allow users create top-level groups.
+- GITLAB_LDAP_USER_CAN_CREATE_TLG_GROUP: Group to allow users create top-level groups.
   When value empty, sync do not perfomed. Default value `''`.
+- GITLAB_REGISTRY_CLEANUP_POLICY_ENABLED: Is container registry cleanup policy set enabled. Default value `false`.
+- GITLAB_REGISTRY_CLENUP_POLICY_CADENCE: Period for run cleanup. Default value `1d`.
+- GITLAB_REGISTRY_KEEP_REGEX: Keep tags regex, `latest` included by default. Default value `(?:v??[\\d]+.[\\d]+.[\\d]+(?:-rc[\\d]+)??)|(\\d{4})`.
+- GITLAB_REGISTRY_REMOVE_REGEX: Remove images regex, excluded images from `GITLAB_REGISTRY_KEEP_REGEX` by default. Default value `.*`.
+- GITLAB_REGISTRY_KEEP_RECENT: Keep recent N images. Default value `10`.
+- GITLAB_REGISTRY_REMOVE_OLDER_THAN: Remove images if they older than N and match with `GITLAB_REGISTRY_REMOVE_REGEX`. Default value `14d`.
 
 ### JsWiki syncer parameters
 

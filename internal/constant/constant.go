@@ -47,13 +47,13 @@ const (
 	// GitlabSyncIntervalEnv environment variable name
 	GitlabSyncIntervalEnv string = "GITLAB_SYNC_INTERVAL"
 	// GitlabUsersLdapGroupEnv environment variable name
-	GitlabUsersLdapGroupEnv string = "LDAP_GITLAB_USERS_GROUP"
+	GitlabUsersLdapGroupEnv string = "GITLAB_LDAP_USERS_GROUP"
 	// GitlabAdminLdapGroupEnv environment variable name
-	GitlabAdminLdapGroupEnv string = "LDAP_GITLAB_ADMIN_GROUP"
+	GitlabAdminLdapGroupEnv string = "GITLAB_LDAP_ADMIN_GROUP"
 	// LdapGroupPrefixEnv environment variable name
-	GitlabLdapGroupPrefixEnv string = "LDAP_GITLAB_GROUP_PREFIX"
+	GitlabLdapGroupPrefixEnv string = "GITLAB_LDAP_GROUP_PREFIX"
 	// ProjectLimitLdapGroupPrefixEnv environment variable name
-	GitlabProjectLimitLdapGroupPrefixEnv string = "LDAP_GITLAB_PROJECT_LIMIT_GROUP_PREFIX"
+	GitlabProjectLimitLdapGroupPrefixEnv string = "GITLAB_LDAP_PROJECT_LIMIT_GROUP_PREFIX"
 	// GitlabGroupDefaultAccessLevelEnv environment variable name
 	GitlabGroupDefaultAccessLevelEnv string = "GITLAB_GROUP_DEFAULT_ACCESS_LEVEL"
 	// GitlabUserDefaultProjectLimitEnv environment variable name
@@ -61,9 +61,21 @@ const (
 	// GitlabUserDefaultCanCreateTLGEnv environment variable name
 	GitlabUserDefaultCanCreateTLGEnv string = "GITLAB_USER_DEFAULT_CAN_CREATE_TLG"
 	// GitlabUserCanCreateTLGLdapGroupEnv environment variable name
-	GitlabUserCanCreateTLGLdapGroupEnv string = "LDAP_GITLAB_USER_CAN_CREATE_TLG_GROUP"
-	// GitlabAllowDeleteUsers environment variable name
-	GitlabAllowDeleteUsers string = "GITLAB_ALLOW_DELETE_USERS"
+	GitlabUserCanCreateTLGLdapGroupEnv string = "GITLAB_LDAP_USER_CAN_CREATE_TLG_GROUP"
+	// GitlabAllowDeleteUsersEnv environment variable name
+	GitlabAllowDeleteUsersEnv string = "GITLAB_ALLOW_DELETE_USERS"
+	// GitlabRegistryCleanupPolicyEnabledEnv environment variable name
+	GitlabRegistryCleanupPolicyEnabledEnv string = "GITLAB_REGISTRY_CLEANUP_POLICY_ENABLED"
+	// GitlabRegistryCadenceEnv environment variable name
+	GitlabRegistryCadenceEnv string = "GITLAB_REGISTRY_CLENUP_POLICY_CADENCE"
+	// GitlabRegistryKeepRegex environment variable name
+	GitlabRegistryKeepRegexEnv string = "GITLAB_REGISTRY_KEEP_REGEX"
+	// GitlabRegistryRemoveRegexEnv environment variable name
+	GitlabRegistryRemoveRegexEnv string = "GITLAB_REGISTRY_REMOVE_REGEX"
+	// GitlabRegistryKeepRecentEnv environment variable name
+	GitlabRegistryKeepRecentEnv string = "GITLAB_REGISTRY_KEEP_RECENT"
+	// GitlabRegistryRemoveOlderEnv environment variable name
+	GitlabRegistryRemoveOlderEnv string = "GITLAB_REGISTRY_REMOVE_OLDER_THAN"
 
 	// JsWikiApiURLEnv environment variable name
 	JsWikiApiURLEnv string = "JSWIKI_API_URL"
@@ -123,6 +135,8 @@ const (
 	SyncerLogField string = "syncer"
 	// GroupLogField is field for client logs
 	GroupLogField string = "group"
+	// ProjectLogField is field for client logs
+	ProjectLogField string = "project"
 	// UserLogField is field for client logs
 	UserLogField string = "user"
 	// ReasonLogField is field for client logs

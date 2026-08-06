@@ -51,6 +51,7 @@ func (s *Syncer) sync() {
 	s.getGitlabUsersFromLdap()
 	s.syncUsers()
 	s.syncGroups()
+	s.syncProjects()
 
 	if err = s.Ldap.Connection.Close(); err != nil {
 		s.Logger.Errorf("LDAP close connection error: %s", err.Error())
@@ -443,8 +444,10 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 	u := s.ldapAllUsers[user.Username]
 
 	opt := &gitlab.ListSSHKeysForUserOptions{
-		PerPage: 100,
-		Page:    1,
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+			Page:    1,
+		},
 	}
 
 	var gitlabSSHKeys = make([]*gitlab.SSHKey, 0)
@@ -489,7 +492,7 @@ func (s *Syncer) syncSSHKeys(user *gitlab.User) {
 			title = fmt.Sprintf("%s %s", title, ipaKeyArray[2])
 		}
 
-		keyid := -1
+		var keyid int64 = -1
 		if !s.IsDryRun {
 			keyOptions := &gitlab.AddSSHKeyOptions{
 				Title: &title,
@@ -553,7 +556,7 @@ func (s *Syncer) isGitLabKeyInIPAKeys(ipaKeys []string, gitlabKey *gitlab.SSHKey
 	return false
 }
 
-func (s *Syncer) isIPAKeyInGitLabKeys(ipaKeyArray []string, gitlabKeys []*gitlab.SSHKey) int {
+func (s *Syncer) isIPAKeyInGitLabKeys(ipaKeyArray []string, gitlabKeys []*gitlab.SSHKey) int64 {
 	for _, gitlabKey := range gitlabKeys {
 		gitlabKeyArray := strings.Fields(gitlabKey.Key)
 		if len(gitlabKeyArray) < 2 {
@@ -569,7 +572,7 @@ func (s *Syncer) isIPAKeyInGitLabKeys(ipaKeyArray []string, gitlabKeys []*gitlab
 }
 
 // Return projects limit by group suffix
-func (s *Syncer) getProjectLimitFromGroupName(group string) int {
+func (s *Syncer) getProjectLimitFromGroupName(group string) int64 {
 	limit := s.UserDefaultProjectLimit
 
 	if group == "" {
@@ -583,7 +586,7 @@ func (s *Syncer) getProjectLimitFromGroupName(group string) int {
 
 	numberPart := group[lastDashIndex+1:]
 
-	if num, err := strconv.Atoi(numberPart); err == nil {
+	if num, err := strconv.ParseInt(numberPart, 10, 64); err == nil {
 		return num
 	}
 	return limit
@@ -664,7 +667,7 @@ func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
 	for _, g := range glgroups {
 		s.Logger.
 			String(constant.GroupLogField, g.FullPath).
-			Info("Sync group")
+			Debug("Sync group")
 		ldapMembers, isExist := s.getGitlabGroupLdapMembers(g)
 		if !isExist {
 			continue
@@ -809,7 +812,7 @@ func (s *Syncer) isUserManagedByLdapProvider(user *gitlab.User) bool {
 	return len(ldapProviderUserDN) != 0
 }
 
-func (s *Syncer) getGitLabUserByID(id int) *gitlab.User {
+func (s *Syncer) getGitLabUserByID(id int64) *gitlab.User {
 	gluser, _, err := s.client.Users.GetUser(id, gitlab.GetUsersOptions{}, gitlab.WithContext(s.Ctx))
 
 	if err != nil {
@@ -932,4 +935,160 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 	}
 
 	return members, isExist
+}
+
+func (s *Syncer) syncProjects() {
+	s.Logger.Info("Projects sync start")
+	opt := &gitlab.ListProjectsOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+			Page:    1,
+		},
+	}
+	for {
+		glprojects, resp, err := s.client.Projects.ListProjects(opt, gitlab.WithContext(s.Ctx))
+		if err != nil {
+			s.Logger.Errorf("Cannot list gitlab projects: %s", err.Error())
+			return
+		}
+
+		select {
+		case <-s.Ctx.Done():
+			s.Logger.Warning("Interrupt project sync")
+			return
+		default:
+			s.syncProjectParameters(glprojects)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+	s.Logger.Info("Projects sync done")
+}
+
+func (s *Syncer) syncProjectParameters(glprojects []*gitlab.Project) {
+	for _, p := range glprojects {
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Debug("Sync project")
+
+		if s.RegistryCleanupPolicyEnabled {
+			s.syncContainerExpirationPolicy(p)
+		}
+	}
+}
+
+func (s *Syncer) syncContainerExpirationPolicy(p *gitlab.Project) {
+	expectedPolicy := s.regsitryCleanupPolicy
+	currentPolicy := p.ContainerExpirationPolicy
+
+	opt := &gitlab.ListProjectRegistryRepositoriesOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+			Page:    1,
+		},
+	}
+	registryReposCount := 0
+	for {
+		registryRepos, resp, err :=
+			s.client.ContainerRegistry.ListProjectRegistryRepositories(p.ID, opt, gitlab.WithContext(s.Ctx))
+		if err != nil {
+			s.Logger.
+				String(constant.ProjectLogField, p.PathWithNamespace).
+				Errorf("Cannot list gitlab project registry: %s", err.Error())
+			return
+		}
+
+		select {
+		case <-s.Ctx.Done():
+			s.Logger.Warning("Interrupt container policy sync")
+			return
+		default:
+			registryReposCount += len(registryRepos)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+	if registryReposCount == 0 {
+		return
+	}
+
+	needUpdate := false
+	if !strings.HasPrefix(currentPolicy.NameRegexKeep, fmt.Sprintf("^((%s)", SyncRegistryPolicyControlString)) &&
+		len(currentPolicy.NameRegexKeep) > 0 &&
+		currentPolicy.NameRegexKeep != ".*" {
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof("Skip project due remove managed flag from policy %s", currentPolicy.NameRegexKeep)
+		return
+	}
+	modifyOptions := &gitlab.EditProjectOptions{
+		ContainerExpirationPolicyAttributes: &gitlab.ContainerExpirationPolicyAttributes{},
+	}
+	if expectedPolicy.Enabled != currentPolicy.Enabled {
+		modifyOptions.ContainerExpirationPolicyAttributes.Enabled = &expectedPolicy.Enabled
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyEnabledFieldMsg,
+				currentPolicy.Enabled, expectedPolicy.Enabled)
+		needUpdate = true
+	}
+	if expectedPolicy.Cadence != currentPolicy.Cadence {
+		modifyOptions.ContainerExpirationPolicyAttributes.Cadence = &expectedPolicy.Cadence
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyCadenceFieldMsg,
+				currentPolicy.Cadence, expectedPolicy.Cadence)
+		needUpdate = true
+	}
+	if expectedPolicy.KeepN != currentPolicy.KeepN {
+		modifyOptions.ContainerExpirationPolicyAttributes.KeepN = &expectedPolicy.KeepN
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyKeepNFieldMsg,
+				currentPolicy.KeepN, expectedPolicy.KeepN)
+		needUpdate = true
+	}
+	if expectedPolicy.NameRegexKeep != currentPolicy.NameRegexKeep {
+		modifyOptions.ContainerExpirationPolicyAttributes.NameRegexKeep = &expectedPolicy.NameRegexKeep
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyNameRegexKeepFieldMsg,
+				currentPolicy.NameRegexKeep, expectedPolicy.NameRegexKeep)
+		needUpdate = true
+	}
+	if expectedPolicy.OlderThan != currentPolicy.OlderThan {
+		modifyOptions.ContainerExpirationPolicyAttributes.OlderThan = &expectedPolicy.OlderThan
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyOlderThanFieldMsg,
+				currentPolicy.OlderThan, expectedPolicy.OlderThan)
+		needUpdate = true
+	}
+	if len(currentPolicy.NameRegexDelete) > 0 &&
+		expectedPolicy.NameRegexDelete != currentPolicy.NameRegexDelete {
+		modifyOptions.ContainerExpirationPolicyAttributes.NameRegexDelete = &expectedPolicy.NameRegexDelete
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Infof(UpdateContainerPolicyNameRegexDeleteFieldMsg,
+				currentPolicy.NameRegexDelete, expectedPolicy.NameRegexDelete)
+		needUpdate = true
+	}
+	if needUpdate {
+		if !s.IsDryRun {
+			if _, _, err := s.client.Projects.EditProject(p.ID, modifyOptions); err != nil {
+				s.Logger.
+					String(constant.ProjectLogField, p.PathWithNamespace).
+					Errorf("Modify project container policy error: %s", err.Error())
+			}
+		}
+		s.Logger.
+			String(constant.ProjectLogField, p.PathWithNamespace).
+			Info(SaveProjectMsg)
+	}
 }

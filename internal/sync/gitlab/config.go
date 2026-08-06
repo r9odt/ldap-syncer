@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/r9odt/go-logging"
@@ -10,6 +11,17 @@ import (
 	"github.com/r9odt/ldap-syncer/internal/utils"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
+
+type registry struct {
+	RegistryCleanupPolicyEnabled bool
+	RegsitryCadence              string
+	RegsitryKeepTagsRegex        string
+	RegsitryKeepMostRecent       int64
+	RegsitryRemoveTagsRegex      string
+	RegsitryRemoveOlderThan      string
+
+	regsitryCleanupPolicy gitlab.ContainerExpirationPolicy
+}
 
 // Syncer represents a Gitlab syncer
 type Syncer struct {
@@ -26,8 +38,10 @@ type Syncer struct {
 	LdapGroupPrefix             string
 	UserCanCreateTLGLdapGroup   string
 	GroupDefaultAccessLevel     string
-	UserDefaultProjectLimit     int
+	UserDefaultProjectLimit     int64
 	UserDefaultCanCreateTLG     bool
+
+	registry
 
 	SyncInterval time.Duration
 
@@ -49,7 +63,7 @@ func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, er
 			Enabled:                     utils.ParseBoolEnv(constant.IsGilabSyncEnabledEnv, true),
 			Ctx:                         ctx,
 			Ldap:                        l,
-			AllowDeleteUsers:            utils.ParseBoolEnv(constant.GitlabAllowDeleteUsers, true),
+			AllowDeleteUsers:            utils.ParseBoolEnv(constant.GitlabAllowDeleteUsersEnv, true),
 			SyncInterval:                utils.ParseDurationEnv(constant.GitlabSyncIntervalEnv, 30*time.Minute),
 			ApiURL:                      utils.ParseStringEnv(constant.GitlabApiURLEnv, ""),
 			Token:                       utils.ParseStringEnv(constant.GitlabTokenEnv, ""),
@@ -60,11 +74,28 @@ func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, er
 			LdapGroupPrefix:             utils.ParseStringEnv(constant.GitlabLdapGroupPrefixEnv, "gitlab-group-"),
 			UserCanCreateTLGLdapGroup:   utils.ParseStringEnv(constant.GitlabUserCanCreateTLGLdapGroupEnv, ""),
 			GroupDefaultAccessLevel:     utils.ParseStringEnv(constant.GitlabGroupDefaultAccessLevelEnv, "reporter"),
-			UserDefaultProjectLimit:     utils.ParseIntEnv(constant.GitlabUserDefaultProjectLimitEnv, 20),
+			UserDefaultProjectLimit:     utils.ParseInt64Env(constant.GitlabUserDefaultProjectLimitEnv, 20),
 			UserDefaultCanCreateTLG:     utils.ParseBoolEnv(constant.GitlabUserDefaultCanCreateTLGEnv, false),
+			registry: registry{
+				RegistryCleanupPolicyEnabled: utils.ParseBoolEnv(constant.GitlabRegistryCleanupPolicyEnabledEnv, false),
+				RegsitryCadence:              utils.ParseStringEnv(constant.GitlabRegistryCadenceEnv, "1d"),
+				RegsitryKeepTagsRegex:        utils.ParseStringEnv(constant.GitlabRegistryKeepRegexEnv, "(?:v??[\\d]+.[\\d]+.[\\d]+(?:-rc[\\d]+)??)|(\\d{4})"),
+				RegsitryKeepMostRecent:       utils.ParseInt64Env(constant.GitlabRegistryKeepRecentEnv, 10),
+				RegsitryRemoveTagsRegex:      utils.ParseStringEnv(constant.GitlabRegistryRemoveRegexEnv, ".*"),
+				RegsitryRemoveOlderThan:      utils.ParseStringEnv(constant.GitlabRegistryRemoveOlderEnv, "14d"),
+			},
 		}
 	)
 
+	registryPolicyNameRegexKeep := fmt.Sprintf("^((%s)|(%s))$", SyncRegistryPolicyControlString, c.RegsitryKeepTagsRegex)
+	c.regsitryCleanupPolicy = gitlab.ContainerExpirationPolicy{
+		Enabled:         c.RegistryCleanupPolicyEnabled,
+		Cadence:         c.RegsitryCadence,
+		KeepN:           c.RegsitryKeepMostRecent,
+		OlderThan:       c.RegsitryRemoveOlderThan,
+		NameRegexDelete: c.RegsitryRemoveTagsRegex,
+		NameRegexKeep:   registryPolicyNameRegexKeep,
+	}
 	c.Logger = logger.Clone().String(constant.SyncerLogField, "gitlab")
 
 	return c, c.validate()
