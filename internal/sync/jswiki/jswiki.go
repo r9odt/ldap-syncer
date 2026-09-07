@@ -38,12 +38,19 @@ func (s *Syncer) sync() {
 	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
 	var err error
-	err = s.Ldap.Connect()
+
+	lconn, err := s.Ldap.Connect()
 	if err != nil {
 		s.Logger.Errorf("LDAP Connect error: %s", err.Error())
 		return
 	}
-	err = s.getJsWikiUsersFromLdap()
+	defer func() {
+		if err = lconn.Close(); err != nil {
+			s.Logger.Errorf("LDAP close connection error: %s", err.Error())
+		}
+	}()
+
+	err = s.getJsWikiUsersFromLdap(lconn)
 	if err != nil {
 		return
 	}
@@ -56,15 +63,11 @@ func (s *Syncer) sync() {
 		return
 	}
 
-	s.syncUsers()
-	s.syncGroups()
-
-	if err = s.Ldap.Connection.Close(); err != nil {
-		s.Logger.Errorf("LDAP close connection error: %s", err.Error())
-	}
+	s.syncUsers(lconn)
+	s.syncGroups(lconn)
 }
 
-func (s *Syncer) syncUsers() {
+func (s *Syncer) syncUsers(conn *goldap.Conn) {
 	s.Logger.Info("Users sync start")
 	for _, u := range s.jswikiUsers {
 		s.Logger.
@@ -84,7 +87,7 @@ func (s *Syncer) syncUsers() {
 		}
 
 		if _, ok := s.ldapAllUsers[u.ProviderId]; !ok {
-			err, ok := s.Ldap.IsLdapUserExist(u.ProviderId)
+			err, ok := s.Ldap.IsLdapUserExist(conn, u.ProviderId)
 			if err == nil {
 				if ok {
 					_ = s.disableUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
@@ -197,7 +200,7 @@ func (s *Syncer) deleteUser(user *JsWikiUser, reason string) error {
 	return nil
 }
 
-func (s *Syncer) syncGroups() {
+func (s *Syncer) syncGroups(conn *goldap.Conn) {
 	s.Logger.Infof("Groups sync start")
 	rootMemberId := -1
 	for _, m := range s.jswikiUsers {
@@ -211,7 +214,7 @@ func (s *Syncer) syncGroups() {
 			String(constant.GroupLogField, g.Name).
 			Info("Sync group")
 
-		ldapMembers, isExist := s.getJsWikiGroupLdapMembers(g.Name)
+		ldapMembers, isExist := s.getJsWikiGroupLdapMembers(conn, g.Name)
 		if !isExist {
 			continue
 		}
@@ -420,7 +423,7 @@ func (s *Syncer) sendGraphqlReq(r []byte) (*JsWikiGraphqlResponse, error) {
 	return &data, nil
 }
 
-func (s *Syncer) getJsWikiUsersFromLdap() error {
+func (s *Syncer) getJsWikiUsersFromLdap(conn *goldap.Conn) error {
 	// Find all users in user group
 	allUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
@@ -434,7 +437,7 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 		nil,
 	)
 
-	sr, err := s.Ldap.Connection.Search(allUsersSearchRequest)
+	sr, err := conn.Search(allUsersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.UsersLdapGroup).
@@ -465,7 +468,7 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 		nil,
 	)
 
-	sr, err = s.Ldap.Connection.Search(expiredUsersSearchRequest)
+	sr, err = conn.Search(expiredUsersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.UsersLdapGroup).
@@ -485,7 +488,7 @@ func (s *Syncer) getJsWikiUsersFromLdap() error {
 	return nil
 }
 
-func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
+func (s *Syncer) getJsWikiGroupLdapMembers(conn *goldap.Conn, gr string) (map[int]bool, bool) {
 	isExist := false
 	members := make(map[int]bool)
 	groupname := gr
@@ -509,7 +512,7 @@ func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
 		nil,
 	)
 
-	sr, err := s.Ldap.Connection.Search(groupSearchRequest)
+	sr, err := conn.Search(groupSearchRequest)
 	if err != nil {
 		s.Logger.Errorf(ldap.CannotSearchLdapGroupsMsg, filter, err.Error())
 		return members, isExist
@@ -532,7 +535,7 @@ func (s *Syncer) getJsWikiGroupLdapMembers(gr string) (map[int]bool, bool) {
 		nil,
 	)
 
-	gsr, err := s.Ldap.Connection.Search(usersSearchRequest)
+	gsr, err := conn.Search(usersSearchRequest)
 	if err != nil {
 		s.Logger.Errorf(ldap.CannotSearchLdapUsersForGroupMsg,
 			s.UsersLdapGroup, err.Error())

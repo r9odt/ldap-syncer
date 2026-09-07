@@ -43,7 +43,9 @@ type Syncer struct {
 
 	registry
 
-	SyncInterval time.Duration
+	SyncInterval                time.Duration
+	ProjectSettingsSyncInterval time.Duration
+	GroupsSyncInterval          time.Duration
 
 	Logger logging.Logger
 	Ctx    context.Context
@@ -65,6 +67,8 @@ func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, er
 			Ldap:                        l,
 			AllowDeleteUsers:            utils.ParseBoolEnv(constant.GitlabAllowDeleteUsersEnv, true),
 			SyncInterval:                utils.ParseDurationEnv(constant.GitlabSyncIntervalEnv, 30*time.Minute),
+			ProjectSettingsSyncInterval: utils.ParseDurationEnv(constant.GitlabProjectSettingsSyncIntervalEnv, 24*time.Hour),
+			GroupsSyncInterval:          utils.ParseDurationEnv(constant.GitlabGroupsSyncIntervalEnv, 1*time.Hour),
 			ApiURL:                      utils.ParseStringEnv(constant.GitlabApiURLEnv, ""),
 			Token:                       utils.ParseStringEnv(constant.GitlabTokenEnv, ""),
 			LdapProvider:                utils.ParseStringEnv(constant.GitlabLdapProviderEnv, "ldapmain"),

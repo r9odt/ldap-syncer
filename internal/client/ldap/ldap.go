@@ -8,32 +8,25 @@ import (
 )
 
 // Connect is Ldap Connection without TLS
-func (c *Config) Connect() error {
+func (c *Config) Connect() (*ldap.Conn, error) {
 	l, err := ldap.DialURL(c.LdapURL)
 	if err != nil {
 		c.Logger.Errorf("Cannot connect to %s: %s", c.LdapURL, err.Error())
-		return err
+		return nil, err
 	}
 
 	err = l.Bind(c.LdapBindDN, c.LdapBindPW)
 	if err != nil {
 		c.Logger.Errorf("Cannot bind ldap to %s: %s", c.LdapBindDN, err.Error())
 		_ = l.Close()
-		return err
+		return nil, err
 	}
-	c.Connection = l
-	return nil
-}
 
-// Close ldap connection.
-func (c *Config) Close() {
-	if err := c.Connection.Close(); err != nil {
-		c.Logger.Error("Closing connection error: %s", err.Error())
-	}
+	return l, nil
 }
 
 // Check user in ldap
-func (s *Config) IsLdapUserExist(username string) (error, bool) {
+func (s *Config) IsLdapUserExist(conn *ldap.Conn, username string) (error, bool) {
 	var err error
 	userSearchRequest := ldap.NewSearchRequest(
 		s.LdapUsersBaseDN,
@@ -46,7 +39,7 @@ func (s *Config) IsLdapUserExist(username string) (error, bool) {
 		nil,
 	)
 
-	sr, err := s.Connection.Search(userSearchRequest)
+	sr, err := conn.Search(userSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.UserLogField, username).

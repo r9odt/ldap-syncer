@@ -35,6 +35,8 @@ Configuration via environment variables.
 - SYNC_GITLAB_ENABLED: Is sync for gitlab enabled
 - GITLAB_ALLOW_DELETE_USERS: Allow to delete users. Default: `true`
 - GITLAB_SYNC_INTERVAL: Time interval for sync. Default: `30m`
+- GITLAB_SYNC_PROJECT_SETTINGS_INTERVAL: Time interval for project settings sync. Default: `24h`
+- GITLAB_SYNC_GROUPS_INTERVAL: Time interval for groups sync. Default: `1h`
 - GITLAB_API_URL: URL for accessing Gitlab (e.g. <https://gitlab.example.com>). Required value.
 - GITLAB_TOKEN: Token for working with the Gitlab API. (e.g. `glpat-xxxxx`). Required value.
 - GITLAB_LDAP_PROVIDER: Name of the LDAP provider as configured in Gitlab's LDAP settings.

@@ -46,6 +46,10 @@ const (
 	GitlabLdapProviderEnv string = "GITLAB_LDAP_PROVIDER"
 	// GitlabSyncIntervalEnv environment variable name
 	GitlabSyncIntervalEnv string = "GITLAB_SYNC_INTERVAL"
+	// GitlabProjectSettingsSyncIntervalEnv environment variable name
+	GitlabProjectSettingsSyncIntervalEnv string = "GITLAB_SYNC_PROJECT_SETTINGS_INTERVAL"
+	// GitlabGroupsSyncIntervalEnv environment variable name
+	GitlabGroupsSyncIntervalEnv string = "GITLAB_SYNC_GROUPS_INTERVAL"
 	// GitlabUsersLdapGroupEnv environment variable name
 	GitlabUsersLdapGroupEnv string = "GITLAB_LDAP_USERS_GROUP"
 	// GitlabAdminLdapGroupEnv environment variable name

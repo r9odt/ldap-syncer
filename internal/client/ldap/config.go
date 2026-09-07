@@ -3,7 +3,6 @@ package ldap
 import (
 	"context"
 
-	"github.com/go-ldap/ldap/v3"
 	"github.com/r9odt/go-logging"
 	"github.com/r9odt/ldap-syncer/internal/constant"
 	"github.com/r9odt/ldap-syncer/internal/utils"
@@ -23,8 +22,6 @@ type Config struct {
 
 	Logger logging.Logger
 	Ctx    context.Context
-
-	Connection *ldap.Conn
 }
 
 func New(ctx context.Context, logger logging.Logger) (Config, error) {

@@ -29,12 +29,32 @@ func (s *Syncer) Sync() {
 			Error("Cannot create gitlab client: %s", err.Error())
 		return
 	}
+
+	syncTicker := time.NewTicker(s.SyncInterval)
+	defer syncTicker.Stop()
+
+	projectSettingsTicker := time.NewTicker(s.ProjectSettingsSyncInterval)
+	defer projectSettingsTicker.Stop()
+
+	groupsTicker := time.NewTicker(s.GroupsSyncInterval)
+	defer groupsTicker.Stop()
+
+	s.sync()
+	s.syncGroups()
+
 	for {
-		s.sync()
 		select {
 		case <-s.Ctx.Done():
 			return
-		case <-time.After(s.SyncInterval):
+
+		case <-syncTicker.C:
+			s.sync()
+
+		case <-projectSettingsTicker.C:
+			s.syncProjectsSettings()
+
+		case <-groupsTicker.C:
+			s.syncGroups()
 		}
 	}
 }
@@ -43,22 +63,21 @@ func (s *Syncer) sync() {
 	s.ldapAllUsers = make(map[string]*User)
 	s.ldapExpiredUsers = make(map[string]bool)
 	s.Logger.Infof(constant.DryRunLogMsg, s.IsDryRun)
-	err := s.Ldap.Connect()
+	lconn, err := s.Ldap.Connect()
 	if err != nil {
 		s.Logger.Errorf("LDAP Connect error: %s", err.Error())
 		return
 	}
-	s.getGitlabUsersFromLdap()
-	s.syncUsers()
-	s.syncGroups()
-	s.syncProjects()
-
-	if err = s.Ldap.Connection.Close(); err != nil {
-		s.Logger.Errorf("LDAP close connection error: %s", err.Error())
-	}
+	defer func() {
+		if err = lconn.Close(); err != nil {
+			s.Logger.Errorf("LDAP close connection error: %s", err.Error())
+		}
+	}()
+	s.getGitlabUsersFromLdap(lconn)
+	s.syncUsers(lconn)
 }
 
-func (s *Syncer) getGitlabUsersFromLdap() {
+func (s *Syncer) getGitlabUsersFromLdap(conn *goldap.Conn) {
 	// Find all users in user group
 	allUsersSearchRequest := goldap.NewSearchRequest(
 		s.Ldap.LdapUsersBaseDN,
@@ -73,7 +92,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		nil,
 	)
 
-	sr, err := s.Ldap.Connection.Search(allUsersSearchRequest)
+	sr, err := conn.Search(allUsersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.UsersLdapGroup).
@@ -103,7 +122,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		nil,
 	)
 
-	sr, err = s.Ldap.Connection.Search(adminUsersSearchRequest)
+	sr, err = conn.Search(adminUsersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.AdminLdapGroup).
@@ -136,7 +155,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 		nil,
 	)
 
-	sr, err = s.Ldap.Connection.Search(expiredUsersSearchRequest)
+	sr, err = conn.Search(expiredUsersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.UsersLdapGroup).
@@ -155,7 +174,7 @@ func (s *Syncer) getGitlabUsersFromLdap() {
 	}
 }
 
-func (s *Syncer) syncProjectLimits() {
+func (s *Syncer) syncProjectLimits(conn *goldap.Conn) {
 	var (
 		err    error
 		filter = fmt.Sprintf("(cn=%s*)", goldap.EscapeFilter(s.ProjectLimitLdapGroupPrefix))
@@ -171,7 +190,7 @@ func (s *Syncer) syncProjectLimits() {
 		nil,
 	)
 
-	gr, err := s.Ldap.Connection.Search(groupSearchRequest)
+	gr, err := conn.Search(groupSearchRequest)
 	if err != nil {
 		s.Logger.
 			Errorf("Cannot search ldap group with filter %s: %s",
@@ -201,7 +220,7 @@ func (s *Syncer) syncProjectLimits() {
 			nil,
 		)
 
-		sr, err := s.Ldap.Connection.Search(membersSearchRequest)
+		sr, err := conn.Search(membersSearchRequest)
 		if err != nil {
 			s.Logger.
 				String(constant.GroupLogField, s.UsersLdapGroup).
@@ -226,7 +245,7 @@ func (s *Syncer) syncProjectLimits() {
 	}
 }
 
-func (s *Syncer) syncCanCreateTLGFlag() {
+func (s *Syncer) syncCanCreateTLGFlag(conn *goldap.Conn) {
 	if len(s.UserCanCreateTLGLdapGroup) == 0 {
 		return
 	}
@@ -241,7 +260,7 @@ func (s *Syncer) syncCanCreateTLGFlag() {
 		nil,
 	)
 
-	sr, err := s.Ldap.Connection.Search(usersSearchRequest)
+	sr, err := conn.Search(usersSearchRequest)
 	if err != nil {
 		s.Logger.
 			String(constant.GroupLogField, s.UsersLdapGroup).
@@ -264,10 +283,10 @@ func (s *Syncer) syncCanCreateTLGFlag() {
 	}
 }
 
-func (s *Syncer) syncUsers() {
+func (s *Syncer) syncUsers(conn *goldap.Conn) {
 	s.Logger.Infof("Users sync start")
-	s.syncProjectLimits()
-	s.syncCanCreateTLGFlag()
+	s.syncProjectLimits(conn)
+	s.syncCanCreateTLGFlag(conn)
 	opt := &gitlab.ListUsersOptions{
 		ListOptions: gitlab.ListOptions{
 			PerPage: 100,
@@ -287,7 +306,7 @@ func (s *Syncer) syncUsers() {
 			s.Logger.Warning("Interrupt users sync")
 			return
 		default:
-			s.syncGitlabUsersParameters(glusers)
+			s.syncGitlabUsersParameters(conn, glusers)
 		}
 
 		if resp.NextPage == 0 {
@@ -298,7 +317,7 @@ func (s *Syncer) syncUsers() {
 	s.Logger.Infof("Users sync done")
 }
 
-func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
+func (s *Syncer) syncGitlabUsersParameters(conn *goldap.Conn, glusers []*gitlab.User) {
 	for _, u := range glusers {
 		s.Logger.
 			String(constant.UserLogField, u.Username).
@@ -319,7 +338,7 @@ func (s *Syncer) syncGitlabUsersParameters(glusers []*gitlab.User) {
 		}
 
 		if _, ok := s.ldapAllUsers[u.Username]; !ok {
-			err, ok := s.Ldap.IsLdapUserExist(u.Username)
+			err, ok := s.Ldap.IsLdapUserExist(conn, u.Username)
 			if err == nil {
 				if ok {
 					s.blockUser(u, constant.DisabledOrExcludeFromGroupReasonMsg)
@@ -633,6 +652,16 @@ func (s *Syncer) stringToGitlabPermissions(group string) gitlab.AccessLevelValue
 }
 
 func (s *Syncer) syncGroups() {
+	conn, err := s.Ldap.Connect()
+	if err != nil {
+		s.Logger.Errorf("LDAP Connect error: %s", err.Error())
+		return
+	}
+	defer func() {
+		if err = conn.Close(); err != nil {
+			s.Logger.Errorf("LDAP close connection error: %s", err.Error())
+		}
+	}()
 	s.Logger.Info("Groups sync start")
 	opt := &gitlab.ListGroupsOptions{
 		ListOptions: gitlab.ListOptions{
@@ -652,7 +681,7 @@ func (s *Syncer) syncGroups() {
 			s.Logger.Warning("Interrupt group sync")
 			return
 		default:
-			s.syncGitlabGroupsParameters(glgroups)
+			s.syncGitlabGroupsParameters(conn, glgroups)
 		}
 
 		if resp.NextPage == 0 {
@@ -663,17 +692,17 @@ func (s *Syncer) syncGroups() {
 	s.Logger.Info("Groups sync done")
 }
 
-func (s *Syncer) syncGitlabGroupsParameters(glgroups []*gitlab.Group) {
+func (s *Syncer) syncGitlabGroupsParameters(conn *goldap.Conn, glgroups []*gitlab.Group) {
 	for _, g := range glgroups {
 		s.Logger.
 			String(constant.GroupLogField, g.FullPath).
 			Debug("Sync group")
-		ldapMembers, isExist := s.getGitlabGroupLdapMembers(g)
+		ldapMembers, isExist := s.getGitlabGroupLdapMembers(conn, g)
 		if !isExist {
 			continue
 		}
 
-		gitlabMembers := s.getGitLabGroupMembers(g)
+		gitlabMembers := s.getGitLabGroupMembers(conn, g)
 		for _, m := range gitlabMembers {
 			if _, ok := ldapMembers[m.Username]; ok {
 				continue
@@ -840,7 +869,7 @@ func (s *Syncer) getGitLabUserByName(name string) *gitlab.User {
 	return glusers[0]
 }
 
-func (s *Syncer) getGitLabGroupMembers(group *gitlab.Group) map[string]*gitlab.GroupMember {
+func (s *Syncer) getGitLabGroupMembers(conn *goldap.Conn, group *gitlab.Group) map[string]*gitlab.GroupMember {
 	members := make(map[string]*gitlab.GroupMember)
 
 	// Получаем всех членов группы с пагинацией
@@ -873,7 +902,7 @@ func (s *Syncer) getGitLabGroupMembers(group *gitlab.Group) map[string]*gitlab.G
 	return members
 }
 
-func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gitlab.AccessLevelValue, bool) {
+func (s *Syncer) getGitlabGroupLdapMembers(conn *goldap.Conn, glgroup *gitlab.Group) (map[string]gitlab.AccessLevelValue, bool) {
 	isExist := false
 	members := make(map[string]gitlab.AccessLevelValue)
 	ldapGroupName := strings.ReplaceAll(glgroup.FullPath, "/", "--")
@@ -891,7 +920,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 		nil,
 	)
 
-	sr, err := s.Ldap.Connection.Search(groupSearchRequest)
+	sr, err := conn.Search(groupSearchRequest)
 	if err != nil {
 		s.Logger.Errorf(ldap.CannotSearchLdapGroupsMsg, filter, err.Error())
 		return members, isExist
@@ -917,7 +946,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 			nil,
 		)
 
-		gsr, err := s.Ldap.Connection.Search(usersSearchRequest)
+		gsr, err := conn.Search(usersSearchRequest)
 		if err != nil {
 			s.Logger.
 				String(constant.GroupLogField, s.UsersLdapGroup).
@@ -937,7 +966,7 @@ func (s *Syncer) getGitlabGroupLdapMembers(glgroup *gitlab.Group) (map[string]gi
 	return members, isExist
 }
 
-func (s *Syncer) syncProjects() {
+func (s *Syncer) syncProjectsSettings() {
 	s.Logger.Info("Projects sync start")
 	opt := &gitlab.ListProjectsOptions{
 		ListOptions: gitlab.ListOptions{
