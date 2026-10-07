@@ -83,7 +83,7 @@ func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, er
 			registry: registry{
 				RegistryCleanupPolicyEnabled: utils.ParseBoolEnv(constant.GitlabRegistryCleanupPolicyEnabledEnv, false),
 				RegsitryCadence:              utils.ParseStringEnv(constant.GitlabRegistryCadenceEnv, "1d"),
-				RegsitryKeepTagsRegex:        utils.ParseStringEnv(constant.GitlabRegistryKeepRegexEnv, "(?:v??[\\d]+.[\\d]+.[\\d]+(?:-rc[\\d]+)??)|(\\d{4})"),
+				RegsitryKeepTagsRegex:        utils.ParseStringEnv(constant.GitlabRegistryKeepRegexEnv, "v?\\d+\\.\\d+\\.\\d+(?:-rc\\d+)?|\\d{4}"),
 				RegsitryKeepMostRecent:       utils.ParseInt64Env(constant.GitlabRegistryKeepRecentEnv, 10),
 				RegsitryRemoveTagsRegex:      utils.ParseStringEnv(constant.GitlabRegistryRemoveRegexEnv, ".*"),
 				RegsitryRemoveOlderThan:      utils.ParseStringEnv(constant.GitlabRegistryRemoveOlderEnv, "14d"),
@@ -91,7 +91,7 @@ func New(ctx context.Context, l ldap.Config, logger logging.Logger) (*Syncer, er
 		}
 	)
 
-	registryPolicyNameRegexKeep := fmt.Sprintf("^((%s)|(%s))$", SyncRegistryPolicyControlString, c.RegsitryKeepTagsRegex)
+	registryPolicyNameRegexKeep := fmt.Sprintf("((%s)|(%s))", SyncRegistryPolicyControlString, c.RegsitryKeepTagsRegex)
 	c.regsitryCleanupPolicy = gitlab.ContainerExpirationPolicy{
 		Enabled:         c.RegistryCleanupPolicyEnabled,
 		Cadence:         c.RegsitryCadence,

@@ -39,24 +39,25 @@ func (s *Syncer) Sync() {
 	groupsTicker := time.NewTicker(s.GroupsSyncInterval)
 	defer groupsTicker.Stop()
 
-	s.sync()
-	s.syncGroups()
+	s.syncProjectsSettings()
+	// s.sync()
+	// s.syncGroups()
 
-	for {
-		select {
-		case <-s.Ctx.Done():
-			return
+	// for {
+	// 	select {
+	// 	case <-s.Ctx.Done():
+	// 		return
 
-		case <-syncTicker.C:
-			s.sync()
+	// 	case <-syncTicker.C:
+	// 		s.sync()
 
-		case <-projectSettingsTicker.C:
-			s.syncProjectsSettings()
+	// 	case <-projectSettingsTicker.C:
+	// 		s.syncProjectsSettings()
 
-		case <-groupsTicker.C:
-			s.syncGroups()
-		}
-	}
+	// 	case <-groupsTicker.C:
+	// 		s.syncGroups()
+	// 	}
+	// }
 }
 
 func (s *Syncer) sync() {
@@ -1048,7 +1049,7 @@ func (s *Syncer) syncContainerExpirationPolicy(p *gitlab.Project) {
 	}
 
 	needUpdate := false
-	if !strings.HasPrefix(currentPolicy.NameRegexKeep, fmt.Sprintf("^((%s)", SyncRegistryPolicyControlString)) &&
+	if !strings.HasPrefix(currentPolicy.NameRegexKeep, fmt.Sprintf("((%s)", SyncRegistryPolicyControlString)) &&
 		len(currentPolicy.NameRegexKeep) > 0 &&
 		currentPolicy.NameRegexKeep != ".*" {
 		s.Logger.
